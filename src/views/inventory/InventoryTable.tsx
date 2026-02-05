@@ -156,14 +156,14 @@ export default function InventoryTable({
                 ₨{parseFloat(item.purchase_price_per_item).toLocaleString()}
               </TableCell>
               <TableCell>
-                {item.attachment ? (
+                {item.attachment_url ? (
                   <a
-                    href={item.attachment} // URL to the file
+                    href={item.attachment_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ textDecoration: "none" }}
                   >
-                    {item.attachment.split("/").pop()} {/* Show file name */}
+                    {item.attachment_url.split("/").pop()}
                   </a>
                 ) : (
                   "—"

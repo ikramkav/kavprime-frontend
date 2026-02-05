@@ -20,13 +20,12 @@ import { useGetEmployeeStatsQuery } from "@/redux/services/stats/stats";
 export default function DashboardPage() {
   const theme = useTheme();
 
-  // Get employeeId and role
-  const employeeId = localStorage.getItem("user_id");
-  const { role } = getUserData();
+  // Get employeeId and role (safe on server)
+  const { userId, role } = getUserData();
 
   // Fetch employee stats only if employeeId exists
   const { data: statsData, isLoading, isError } = useGetEmployeeStatsQuery(
-    employeeId || ""
+    userId ? userId.toString() : ""
   );
 
   console.log("Dashboard Stats Data:", statsData);

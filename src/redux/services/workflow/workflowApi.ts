@@ -6,18 +6,16 @@ import { baseApi } from "../../baseApi";
 ======================= */
 
 export interface WorkflowStep {
-  step_order: number;
+  step_order?: number;
   role: string;
   sla_hours: number;
 }
 
 export interface CreateWorkflowRequest {
-  workflow_id: number;
-  ticket_type: string;
-  version: number;
+  ticket_type?: string;
+  version: string | number;
   workflow_name: string;
   description: string;
-  created_at: string;
   steps: WorkflowStep[];
 }
 

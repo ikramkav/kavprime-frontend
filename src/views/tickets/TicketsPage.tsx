@@ -4,7 +4,6 @@
 import React, { useState } from "react";
 import {
   Container,
-  Grid,
   Typography,
   Box,
   CircularProgress,
@@ -18,7 +17,7 @@ export default function TicketsPage() {
   const [employeeId, setEmployeeId] = useState<number>(44);
 
   // Fetch tickets for the selected employee
-  const { data: tickets = [], isLoading, error } = useGetTicketsListQuery(employeeId);
+  const { data: tickets = [], isLoading, error } = useGetTicketsListQuery(employeeId.toString());
 
   const handleEmployeeIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newId = parseInt(e.target.value);
@@ -76,13 +75,13 @@ export default function TicketsPage() {
 
       {/* Tickets Grid */}
       {!isLoading && !error && tickets.length > 0 && (
-        <Grid container spacing={3}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {tickets.map((ticket) => (
-            <Grid item xs={12} sm={6} md={4} key={ticket.id}>
-              <TicketCard ticket={ticket} />
-            </Grid>
+            <Box key={ticket.id}>
+              <TicketCard ticket={ticket} canUpdate={false} onUpdateClick={() => {}} />
+            </Box>
           ))}
-        </Grid>
+        </Box>
       )}
     </Container>
   );

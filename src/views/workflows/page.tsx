@@ -11,7 +11,7 @@ import {
   CardActions,
   Chip,
   IconButton,
-  Grid,
+  
   Divider,
   Stack,
   Alert,
@@ -164,9 +164,9 @@ const WorkflowPage = () => {
           </Button>
         </Box>
       ) : (
-        <Grid container spacing={3}>
+        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
           {workflowsData.map((workflow) => (
-            <Grid item xs={12} sm={6} md={4} lg={4} key={workflow.workflow_id}>
+            <Box key={workflow.workflow_id}>
               <Card
                 elevation={2}
                 sx={{
@@ -279,9 +279,9 @@ const WorkflowPage = () => {
                   </IconButton>
                 </CardActions>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       )}
 
       {/* Create/Edit Workflow Dialog Component */}

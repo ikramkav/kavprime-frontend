@@ -89,7 +89,7 @@ export default function AddInventoryDialog({
       purchase_date: "",
       purchase_price_per_item: "",
       vendor_name: "",
-      attachment: "",
+      attachment: null,
     });
     onClose();
   };

@@ -40,8 +40,8 @@ export default function IssueInventoryDialog({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Get logged-in user ID from localStorage
-  const loggedInUserId = localStorage.getItem("user_id");
+  // Get logged-in user ID from localStorage (guarded for SSR)
+  const loggedInUserId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
 
   // Filter users to exclude the logged-in admin
   const filteredUsers = useMemo(() => {
@@ -80,8 +80,8 @@ export default function IssueInventoryDialog({
       return;
     }
 
-    // Get logged-in user from localStorage
-    const issuedById = localStorage.getItem("user_id");
+    // Get logged-in user from localStorage (guarded for SSR)
+    const issuedById = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
     if (!issuedById) {
       setError("User not logged in. Please log in again.");
       return;

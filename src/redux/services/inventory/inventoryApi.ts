@@ -13,7 +13,7 @@ export interface AddInventoryRequest {
   purchase_date: string;
   purchase_price_per_item: number;
   vendor_name: string;
-  attachment?: File;
+  attachment?: File | null;
 }
 
 export interface AddInventoryResponse {
@@ -34,7 +34,7 @@ export interface UpdateInventoryRequest {
   purchase_date?: string;
   purchase_price_per_item?: number;
   vendor_name?: string;
-  attachment?: File;
+  attachment?: File | null;
 }
 
 export interface UpdateInventoryResponse {

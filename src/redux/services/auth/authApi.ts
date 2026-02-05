@@ -18,6 +18,9 @@ export interface RegisterRequest {
   email: string;
   password: string;
   role?: "ADMIN" | "EMPLOYEE" | "PMO" | "SENIOR_PMO" | "FINANCE";
+  designation?: string;
+  employment_status?: string;
+  join_date?: string;
 }
 
 export interface RegisterResponse {
@@ -30,6 +33,9 @@ export interface UpdateUserRequest {
   id: number;
   name?: string;
   role?: "ADMIN" | "EMPLOYEE" | "PMO" | "SENIOR_PMO" | "FINANCE";
+  designation?: string;
+  employment_status?: string;
+  join_date?: string;
 }
 
 export interface UpdateUserResponse {

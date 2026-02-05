@@ -23,7 +23,7 @@ interface TicketsListProps {
 }
 
 export default function TicketsList({ userRole, userId }: TicketsListProps) {
-  const { data: tickets, isLoading, isError } = useGetTicketsListQuery();
+  const { data: tickets, isLoading, isError } = useGetTicketsListQuery(userId.toString());
   const { data: usersData } = useGetUsersQuery();
 
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);

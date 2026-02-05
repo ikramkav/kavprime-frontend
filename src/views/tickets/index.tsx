@@ -17,14 +17,13 @@ export default function TicketManagement() {
 
   // Check if user can create tickets (all except ADMIN)
   const canCreateTicket = role !== "ADMIN" && role !== null;
-  const employeeId = localStorage.getItem("user_id");
+  const employeeId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
 
   // Determine if user is admin or approver role
   const isAdminOrApprover =
     role === "ADMIN" ||
     role === "SENIOR_PMO" ||
-    role === "PMO" ||
-    role === "Team_pmo";
+    role === "PMO";
 
   // Fetch employee tickets if not admin/approver
   const {
@@ -72,8 +71,6 @@ export default function TicketManagement() {
             {role === "SENIOR_PMO" &&
               "Review and approve tickets pending senior PMO approval"}
             {role === "PMO" &&
-              "Review and approve tickets pending team PMO approval"}
-            {role === "Team_pmo" &&
               "Review and approve tickets pending team PMO approval"}
             {(role === "EMPLOYEE" || role === "FINANCE") &&
               "Create and track your tickets"}
