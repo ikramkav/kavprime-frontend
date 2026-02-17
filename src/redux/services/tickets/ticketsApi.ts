@@ -8,6 +8,7 @@ export interface CreateTicketRequest {
   title: string;
   description: string;
   assigned_to?: number | null;
+  assigned_to_email?: string;
 }
 
 export interface CreateTicketResponse {
@@ -18,11 +19,20 @@ export interface CreateTicketResponse {
 export interface CreateActionResponse {
   action: string;
   ticket_id: number;
+  remarks: string;
+  role_email_map: {
+    [key: string]: string;
+  };
+  role: string;
 }
 export interface CreateActionRequest {
   ticket_id: number;
   action: string;
-  remarks?: string;
+  remarks: string;
+  role_email_map: {
+    [key: string]: string;
+  };
+  role: string;
 }
 
 export interface UpdateTicketStatusRequest {
@@ -69,6 +79,37 @@ export interface TicketHistory {
   created_at: string;
   steps: TicketStep[];
 }
+export interface AssignedUser {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface EmployeeInfo {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export interface AssignedTicket {
+  ticket_id: number;
+  title: string;
+  description: string;
+  ticket_type: string;
+  status: string;
+  current_step: number;
+  current_role: string | null;
+  workflow_id: number | null;
+  assigned_to: AssignedUser;
+  employee: EmployeeInfo;
+}
+
+export interface GetAssignedTicketsResponse {
+  message: string;
+  tickets: AssignedTicket[];
+  total: number;
+}
 
 export type GetTicketsListResponse = Ticket[];
 export type GetTicketHistoryResponse = TicketHistory[];
@@ -99,6 +140,13 @@ export const ticketsApi = baseApi.injectEndpoints({
         params: {
           employee_id: employeeId,
         },
+      }),
+      providesTags: ["Tickets"],
+    }),
+    getAssignedTickets: builder.query<GetAssignedTicketsResponse, number>({
+      query: (userId) => ({
+        url: `/tickets/dashboard/${userId}/`,
+        method: "GET",
       }),
       providesTags: ["Tickets"],
     }),
@@ -148,5 +196,6 @@ export const {
   useGetAllTicketsQuery,
   useGetTicketsListHistoryQuery,
   useUpdateTicketStatusMutation,
+  useGetAssignedTicketsQuery,
   useGetTicketHistoryQuery,
 } = ticketsApi;

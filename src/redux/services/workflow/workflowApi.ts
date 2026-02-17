@@ -5,36 +5,47 @@ import { baseApi } from "../../baseApi";
    Types & Interfaces
 ======================= */
 
-export interface WorkflowStep {
-  step_order?: number;
-  role: string;
+export interface WorkflowStepDetail {
+  step_order: number;
+  target_role: string;
   sla_hours: number;
+}
+
+export interface RoleWorkflowSteps {
+  role: string;
+  steps: WorkflowStepDetail[];
 }
 
 export interface CreateWorkflowRequest {
   ticket_type?: string;
-  version: string | number;
   workflow_name: string;
   description: string;
-  steps: WorkflowStep[];
+  is_active?: boolean;
+  roles: RoleWorkflowSteps[];
 }
 
 export interface CreateWorkflowResponse {
   workflow_id: number;
   workflow_name: string;
-  version: number;
+  version?: number;
   is_active: boolean;
+}
+
+export interface WorkflowStep {
+  step_order: number;
+  target_role: string;
+  sla_hours: number;
 }
 
 export interface Workflow {
   workflow_id: number;
   ticket_type: string;
-  version: number;
+  version?: number;
   workflow_name: string;
   description: string;
   is_active: boolean;
   created_at: string;
-  steps: WorkflowStep[];
+  roles: RoleWorkflowSteps[];
 }
 
 export type GetWorkflowsResponse = Workflow[];

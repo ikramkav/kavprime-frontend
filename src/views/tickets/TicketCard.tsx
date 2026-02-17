@@ -20,6 +20,7 @@ import {
   Divider,
   CircularProgress,
   Alert,
+  Snackbar,
 } from "@mui/material";
 import {
   CalendarToday,
@@ -29,7 +30,6 @@ import {
   TripOrigin,
   HourglassEmpty,
 } from "@mui/icons-material";
-import { Snackbar } from "@mui/material";
 
 import {
   Ticket,
@@ -64,12 +64,11 @@ export default function TicketCard({
     "success",
   );
   const [actionTaken, setActionTaken] = useState(false);
-  
+
   // State for Role
   const [userRole, setUserRole] = useState<string>("");
 
   useEffect(() => {
-    // Get role from local storage strictly on client side to avoid hydration mismatch
     const role = localStorage.getItem("role");
     if (role) {
       setUserRole(role.toUpperCase());
@@ -102,7 +101,7 @@ export default function TicketCard({
         action: "REJECT",
         remarks: `Rejected by ${userRole}`,
       }).unwrap();
-      setActionTaken(true); // Treat rejection as an action taken
+      setActionTaken(true);
       setSnackbarMessage("Ticket Rejected");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
@@ -119,9 +118,7 @@ export default function TicketCard({
     data: apiHistoryData,
     isLoading,
     isError,
-  } = useGetTicketHistoryQuery(ticket.id, {
-    skip: !historyOpen,
-  });
+  } = useGetTicketHistoryQuery(ticket.id, { skip: !historyOpen });
 
   const getStatusColor = (status: string) => {
     if (status.includes("PENDING")) return "warning";
@@ -145,30 +142,30 @@ export default function TicketCard({
     });
   };
 
-  // --- Logic to determine if buttons should be shown ---
   const currentStatus = ticket.status.toUpperCase();
-  
-  // Define who can approve specific statuses
-  // Using 'includes' to handle variations like "PENDING_TEAM_PMO" vs "PENDING_TEAM_PMO_APPROVAL"
+
   const isPendingTeamPmo = currentStatus.includes("PENDING_TEAM_PMO");
   const isPendingSeniorPmo = currentStatus.includes("PENDING_SENIOR_PMO");
   const isPendingAdmin = currentStatus.includes("PENDING_ADMIN");
 
-  // Check if current user role matches the pending status
-  const canCurrentUserApprove = 
+  const canCurrentUserApprove =
     (userRole === "TEAM_PMO" && isPendingTeamPmo) ||
     (userRole === "SENIOR_PMO" && isPendingSeniorPmo) ||
-    (userRole === "PMO" && isPendingTeamPmo) || // Fallback if role is just PMO
+    (userRole === "PMO" && isPendingTeamPmo) ||
     (userRole === "ADMIN" && isPendingAdmin);
 
-  // Check if user is an approver role (to decide whether to show "Pending X" message)
-  const isApproverRole = 
-    userRole === "ADMIN" || 
-    userRole === "SENIOR_PMO" || 
-    userRole === "PMO" || 
+  const isApproverRole =
+    userRole === "ADMIN" ||
+    userRole === "SENIOR_PMO" ||
+    userRole === "PMO" ||
     userRole === "TEAM_PMO";
 
-  const showButtons = canCurrentUserApprove && !actionTaken && !currentStatus.includes("REJECTED") && !currentStatus.includes("APPROVED") && !currentStatus.includes("COMPLETED");
+  const showButtons =
+    canCurrentUserApprove &&
+    !actionTaken &&
+    !currentStatus.includes("REJECTED") &&
+    !currentStatus.includes("APPROVED") &&
+    !currentStatus.includes("COMPLETED");
 
   return (
     <>
@@ -216,9 +213,20 @@ export default function TicketCard({
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
             <Chip
               label={ticket.status.replace(/_/g, " ")}
-              color={getStatusColor(ticket.status)}
               size="small"
+              sx={{
+                backgroundColor:
+                  ticket.status === "REJECTED"
+                    ? "#d32f2f" // custom red
+                    : getStatusColor(ticket.status) === "warning"
+                      ? "#ed6c02"
+                      : getStatusColor(ticket.status) === "success"
+                        ? "#2e7d32"
+                        : "grey.400",
+                color: "white",
+              }}
             />
+
             <Chip
               label={getTicketTypeLabel(ticket.ticket_type)}
               variant="outlined"
@@ -248,55 +256,6 @@ export default function TicketCard({
               </Typography>
             </Box>
           </Box>
-
-          {/* Action Area */}
-          <Box sx={{ mt: 2 }}>
-            {/* Show Approve/Reject Buttons ONLY if it matches the role and status */}
-            {showButtons ? (
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <Button
-                  variant="contained"
-                  color="success"
-                  size="small"
-                  onClick={handleApprove}
-                  disabled={isActionLoading}
-                  startIcon={<CheckCircle />}
-                >
-                  Approve
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  size="small"
-                  onClick={handleReject}
-                  disabled={isActionLoading}
-                >
-                  Reject
-                </Button>
-              </Box>
-            ) : (
-              // If not actionable by this user, but the ticket is still pending and user is an approver
-              // Show who it is pending with (based on status)
-              isApproverRole && currentStatus.includes("PENDING") && (
-                <Box 
-                  sx={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: 1, 
-                    p: 1, 
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                    borderRadius: 1 
-                  }}
-                >
-                   <HourglassEmpty fontSize="small" color="disabled" />
-                   <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                      {/* Displays: "Current Status: PENDING SENIOR PMO" etc */}
-                      Waiting for: {ticket.status.replace(/_/g, " ")}
-                   </Typography>
-                </Box>
-              )
-            )}
-          </Box>
         </CardContent>
       </Card>
 
@@ -325,9 +284,10 @@ export default function TicketCard({
           {!isLoading &&
             !isError &&
             apiHistoryData &&
-            apiHistoryData.length > 0 && (
+            apiHistoryData.steps &&
+            apiHistoryData.steps.length > 0 && (
               <List>
-                {apiHistoryData[0].steps.map((step, index) => (
+                {apiHistoryData.steps.map((step, index) => (
                   <ListItem
                     key={index}
                     alignItems="flex-start"
@@ -350,10 +310,16 @@ export default function TicketCard({
                           sx={{
                             display: "flex",
                             justifyContent: "space-between",
+                            flexWrap: "wrap",
+                            gap: 1,
                           }}
                         >
                           <Typography variant="subtitle2" fontWeight="bold">
+                            Step {step.step_order}:{" "}
                             {step.role.replace(/_/g, " ")}
+                          </Typography>
+                          <Typography variant="body2">
+                            SLA Hours: {step.sla_hours}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {formatDate(step.action_date)}
@@ -361,25 +327,13 @@ export default function TicketCard({
                         </Box>
                       }
                       secondary={
-                        <Box
-                          component="span"
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            mt: 0.5,
-                          }}
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ mt: 0.5 }}
                         >
-                          <Typography variant="body2" color="text.primary">
-                            {step.remarks}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ mt: 0.5 }}
-                          >
-                            State: {step.state}
-                          </Typography>
-                        </Box>
+                          State: {step.state}
+                        </Typography>
                       }
                     />
                   </ListItem>
@@ -389,7 +343,9 @@ export default function TicketCard({
 
           {!isLoading &&
             !isError &&
-            (!apiHistoryData || apiHistoryData.length === 0) && (
+            (!apiHistoryData ||
+              !apiHistoryData.steps ||
+              apiHistoryData.steps.length === 0) && (
               <Box sx={{ p: 2, textAlign: "center" }}>
                 <Typography color="text.secondary">
                   No history found.

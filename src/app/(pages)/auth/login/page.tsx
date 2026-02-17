@@ -58,23 +58,38 @@ const handleSubmit = async (e: React.FormEvent) => {
   try {
     const result = await login(formData).unwrap();
 
-    // Save user data to localStorage
+    // Save basic user data
     localStorage.setItem("user_id", result.user_id.toString());
     localStorage.setItem("role", result.role);
-    
-    // Show success toast
+    localStorage.setItem("employment_status", result.employment_status);
+
+    // ✅ Save complete workflow object
+    if (result.workflow) {
+      localStorage.setItem("workflow", JSON.stringify(result.workflow));
+
+      // ✅ Save only steps separately (if you need direct access)
+      localStorage.setItem(
+        "workflow_steps",
+        JSON.stringify(result.workflow.steps)
+      );
+    }
+
     toast.success(result.message || "Login successful!");
-    
-    // Redirect based on the response
+
     setTimeout(() => {
       router.push("/dashboard");
     }, 1000);
+
   } catch (err: any) {
-    // Show error toast - Fixed to use err.data.error
-    toast.error(err?.data?.error || err?.data?.message || "Login failed. Please try again.");
+    toast.error(
+      err?.data?.error ||
+      err?.data?.message ||
+      "Login failed. Please try again."
+    );
     console.error("Login failed:", err);
   }
 };
+
 
   return (
     <Box

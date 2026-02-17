@@ -16,6 +16,7 @@ import {
 } from "@mui/icons-material";
 import { getUserData } from "@/utils/auth";
 import { useGetEmployeeStatsQuery } from "@/redux/services/stats/stats";
+import WorkflowSteps from "@/views/workflows/WorkflowSteps";
 
 export default function DashboardPage() {
   const theme = useTheme();
@@ -109,6 +110,7 @@ export default function DashboardPage() {
       </Box>
     );
   }
+  const workflow = JSON.parse(localStorage.getItem("workflow") || "{}");
 
   return (
     <Box sx={{ width: "100%", height: "100%" }}>
@@ -246,6 +248,14 @@ export default function DashboardPage() {
           </Box>
         </Paper>
 
+      <WorkflowSteps
+  steps={workflow?.steps?.map((step: any) => ({
+    ...step,
+    assigned_to: step.assigned_user_name, // replace with actual assigned user if available
+    status: step.status, // if you have status per step
+  })) || []}
+/>
+         
         {/* Quick Stats */}
         <Paper
           elevation={0}

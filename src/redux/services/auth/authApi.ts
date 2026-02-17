@@ -11,6 +11,8 @@ export interface LoginResponse {
   user_id: number;
   role: "ADMIN" | "EMPLOYEE" | "PMO" | "SENIOR_PMO" | "FINANCE";
   redirect_url: string;
+  employment_status: string; 
+  workflow?: Workflow;
 }
 
 export interface RegisterRequest {
@@ -76,6 +78,21 @@ export interface User {
 
 export interface GetUsersResponse {
   users: User[];
+}
+
+export interface WorkflowStep {
+  step_order: number;
+  role: string;
+  target_role: string;
+  sla_hours: number;
+}
+export interface Workflow {
+  workflow_id: number;
+  ticket_type: string;
+  version: number;
+  workflow_name: string;
+  description: string;
+  steps: WorkflowStep[];
 }
 
 // Extend the base API with auth endpoints

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -15,6 +15,8 @@ import {
 } from "@mui/material";
 import { useCreateTicketMutation } from "@/redux/services/tickets/ticketsApi";
 import { toast } from "react-toastify";
+import { useGetUsersQuery } from "@/redux/services/auth/authApi";
+import { useGetRolesQuery } from "@/redux/services/roles/rolesApi";
 
 interface CreateTicketDialogProps {
   open: boolean;
@@ -23,9 +25,9 @@ interface CreateTicketDialogProps {
 }
 
 const ticketTypes = [
-  { value: "request_new_item", label: "Request New Item" },
-  { value: "repair", label: "Repair an Item" },
-  { value: "general_issue", label: "General Issue" },
+  { value: "Request New Item", label: "Request New Item" },
+  { value: "Repair an Item", label: "Repair an Item" },
+  { value: "General Issue", label: "General Issue" },
 ];
 
 export default function CreateTicketDialog({
@@ -41,7 +43,37 @@ export default function CreateTicketDialog({
     description: "",
   });
 
+  const { data: usersData } = useGetUsersQuery();
+  const { data: rolesData } = useGetRolesQuery();
+
+  const [assignedTo, setAssignedTo] = useState<number | "">("");
+  const [targetRole, setTargetRole] = useState<string | null>(null);
+  const [assignedUserEmail, setAssignedUserEmail] = useState<string>("");
+
   const [error, setError] = useState<string | null>(null);
+
+  // Load workflow from localStorage and set the target role of step_order 1
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const workflowData = localStorage.getItem("workflow");
+
+      if (workflowData) {
+        const workflow = JSON.parse(workflowData);
+
+        const firstStep = workflow?.steps?.find(
+          (step: any) => step.step_order === 1
+        );
+
+        if (firstStep) {
+          setTargetRole(firstStep.target_role);
+        }
+      }
+    }
+  }, []);
+
+  // Filter users based on the target role
+  const filteredUsers =
+    usersData?.users?.filter((user) => user.role === targetRole) || [];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -50,14 +82,29 @@ export default function CreateTicketDialog({
     });
   };
 
+  const handleAssignedToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const userId = Number(e.target.value);
+    setAssignedTo(userId);
+
+    const selectedUser = filteredUsers.find((user) => user.id === userId);
+    setAssignedUserEmail(selectedUser?.email || "");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!assignedTo) {
+      setError("Please select user to assign");
+      return;
+    }
 
     if (!formData.ticket_type || !formData.title || !formData.description) {
       setError("Please fill all fields");
       return;
     }
+
+    const role = localStorage.getItem("role");
 
     try {
       const result = await createTicket({
@@ -65,17 +112,24 @@ export default function CreateTicketDialog({
         ticket_type: formData.ticket_type,
         title: formData.title,
         description: formData.description,
+        assigned_to: Number(assignedTo),
+        assigned_to_email: assignedUserEmail,
+        role: role || undefined,
       }).unwrap();
 
       toast.success(result.message || "Ticket created successfully!");
       handleClose();
     } catch (err: any) {
-      setError(err?.data?.error || err?.data?.message || "Failed to create ticket");
+      setError(
+        err?.data?.error || err?.data?.message || "Failed to create ticket"
+      );
     }
   };
 
   const handleClose = () => {
     setFormData({ ticket_type: "", title: "", description: "" });
+    setAssignedTo("");
+    setAssignedUserEmail("");
     setError(null);
     onClose();
   };
@@ -117,6 +171,28 @@ export default function CreateTicketDialog({
             />
 
             <TextField
+              select
+              fullWidth
+              label="Assign To"
+              value={assignedTo}
+              onChange={handleAssignedToChange}
+              required
+              disabled={isLoading}
+            >
+              {filteredUsers.length === 0 && (
+                <MenuItem disabled value="">
+                  No users available for this role
+                </MenuItem>
+              )}
+
+              {filteredUsers.map((user) => (
+                <MenuItem key={user.id} value={user.id}>
+                  {user.name} ({user.email})
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
               fullWidth
               label="Description"
               name="description"
@@ -137,7 +213,11 @@ export default function CreateTicketDialog({
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={handleClose} disabled={isLoading} sx={{ textTransform: "none" }}>
+          <Button
+            onClick={handleClose}
+            disabled={isLoading}
+            sx={{ textTransform: "none" }}
+          >
             Cancel
           </Button>
           <Button

@@ -21,7 +21,7 @@ import {
   Alert,
   Snackbar,
 } from "@mui/material";
-import { Delete as DeleteIcon } from "@mui/icons-material";
+import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import { useCreateWorkflowMutation } from "@/redux/services/workflow/workflowApi";
 import { useGetRolesQuery } from "@/redux/services/workflow/workflowApi";
@@ -32,9 +32,15 @@ interface Role {
   is_active: boolean;
 }
 
-interface WorkflowStep {
-  role: string;
+interface WorkflowStepDetail {
+  step_order: number;
+  target_role: string;
   sla_hours: number;
+}
+
+interface RoleWorkflow {
+  role: string;
+  steps: WorkflowStepDetail[];
 }
 
 interface WorkflowDialogProps {
@@ -52,8 +58,8 @@ const AddWorkflowDialog = ({
 }: WorkflowDialogProps) => {
   const [workflowName, setWorkflowName] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  const [version, setVersion] = useState<string>("");
-  const [steps, setSteps] = useState<WorkflowStep[]>([{ role: "", sla_hours: 0 }]);
+  const [ticketType, setTicketType] = useState<string>("");
+  const [roleWorkflows, setRoleWorkflows] = useState<RoleWorkflow[]>([]);
   const [error, setError] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -70,8 +76,8 @@ const AddWorkflowDialog = ({
     if (open) {
       setWorkflowName("");
       setDescription("");
-      setVersion("");
-      setSteps([{ role: "", sla_hours: 0 }]);
+      setTicketType("");
+      setRoleWorkflows([]);
       setError("");
       setShowSuccess(false);
     }
@@ -87,49 +93,114 @@ const AddWorkflowDialog = ({
     setDescription(value);
   };
 
-  // Handle version change
-  const handleVersionChange = (value: string) => {
-    setVersion(value);
+  // Handle ticket type change
+  const handleTicketTypeChange = (value: string) => {
+    setTicketType(value);
   };
 
-  // Handle step role change
-  const handleStepRoleChange = (index: number, roleId: string) => {
-    const newSteps = [...steps];
-    newSteps[index].role = roleId;
-    setSteps(newSteps);
+  // Add new role workflow
+  const handleAddRoleWorkflow = () => {
+    const newRoleWorkflow: RoleWorkflow = {
+      role: "",
+      steps: [{ step_order: getNextStepOrder(), target_role: "", sla_hours: 0 }],
+    };
+    setRoleWorkflows([...roleWorkflows, newRoleWorkflow]);
   };
 
-  // Handle step SLA hours change
-  const handleStepSlaChange = (index: number, slaHours: string) => {
-    const newSteps = [...steps];
-    newSteps[index].sla_hours = Number(slaHours) || 0;
-    setSteps(newSteps);
+  // Remove role workflow
+  const handleRemoveRoleWorkflow = (index: number) => {
+    const newRoleWorkflows = roleWorkflows.filter((_, idx) => idx !== index);
+    setRoleWorkflows(newRoleWorkflows);
   };
 
-  // Add new step
-  const handleAddStep = () => {
-    setSteps([...steps, { role: "", sla_hours: 0 }]);
+  // Handle role change for a role workflow
+  const handleRoleChange = (index: number, roleName: string) => {
+    const newRoleWorkflows = [...roleWorkflows];
+    newRoleWorkflows[index].role = roleName;
+    setRoleWorkflows(newRoleWorkflows);
   };
 
-  // Remove step
-  const handleRemoveStep = (index: number) => {
-    if (steps.length > 1) {
-      const newSteps = steps.filter((_, idx) => idx !== index);
-      setSteps(newSteps);
+  // Add step to a specific role workflow
+  const handleAddStep = (roleIndex: number) => {
+    const newRoleWorkflows = [...roleWorkflows];
+    const newStep: WorkflowStepDetail = {
+      step_order: getNextStepOrder(),
+      target_role: "",
+      sla_hours: 0,
+    };
+    newRoleWorkflows[roleIndex].steps.push(newStep);
+    setRoleWorkflows(newRoleWorkflows);
+  };
+
+  // Remove step from a specific role workflow
+  const handleRemoveStep = (roleIndex: number, stepIndex: number) => {
+    const newRoleWorkflows = [...roleWorkflows];
+    if (newRoleWorkflows[roleIndex].steps.length > 1) {
+      newRoleWorkflows[roleIndex].steps.splice(stepIndex, 1);
+      // Recalculate step orders after removal
+      recalculateStepOrders(newRoleWorkflows);
+      setRoleWorkflows(newRoleWorkflows);
     }
   };
 
-  // Get already selected roles
-  const selectedRoles = steps
-    .map((step) => step.role)
+  // Handle target role change for a step
+  const handleTargetRoleChange = (
+    roleIndex: number,
+    stepIndex: number,
+    targetRole: string
+  ) => {
+    const newRoleWorkflows = [...roleWorkflows];
+    newRoleWorkflows[roleIndex].steps[stepIndex].target_role = targetRole;
+    setRoleWorkflows(newRoleWorkflows);
+  };
+
+  // Handle SLA hours change for a step
+  const handleSlaChange = (
+    roleIndex: number,
+    stepIndex: number,
+    slaHours: string
+  ) => {
+    const newRoleWorkflows = [...roleWorkflows];
+    newRoleWorkflows[roleIndex].steps[stepIndex].sla_hours =
+      Number(slaHours) || 0;
+    setRoleWorkflows(newRoleWorkflows);
+  };
+
+  // Get next step order globally
+  const getNextStepOrder = (): number => {
+    let maxOrder = 0;
+    roleWorkflows.forEach((roleWorkflow) => {
+      roleWorkflow.steps.forEach((step) => {
+        if (step.step_order > maxOrder) {
+          maxOrder = step.step_order;
+        }
+      });
+    });
+    return maxOrder + 1;
+  };
+
+  // Recalculate step orders to ensure they are sequential
+  const recalculateStepOrders = (workflows: RoleWorkflow[]) => {
+    let stepOrder = 1;
+    workflows.forEach((roleWorkflow) => {
+      roleWorkflow.steps.forEach((step) => {
+        step.step_order = stepOrder;
+        stepOrder++;
+      });
+    });
+  };
+
+  // Get already selected roles (main roles)
+  const selectedMainRoles = roleWorkflows
+    .map((rw) => rw.role)
     .filter((role) => role !== "");
 
-  // Get available roles for a specific dropdown
-  const getAvailableRolesForStep = (stepIndex: number) => {
-    const currentRole = steps[stepIndex].role;
+  // Get available roles for main role dropdown
+  const getAvailableMainRoles = (currentIndex: number) => {
+    const currentRole = roleWorkflows[currentIndex].role;
     return availableRoles.filter(
       (role) =>
-        role.name === currentRole || !selectedRoles.includes(role.name)
+        role.name === currentRole || !selectedMainRoles.includes(role.name)
     );
   };
 
@@ -145,21 +216,32 @@ const AddWorkflowDialog = ({
       return false;
     }
 
-    if (!version.trim()) {
-      setError("Workflow Version is required");
+    if (roleWorkflows.length === 0) {
+      setError("Please add at least one role with steps");
       return false;
     }
 
-    const validSteps = steps.filter((step) => step.role);
-    if (validSteps.length === 0) {
-      setError("Please add at least one step with a role");
-      return false;
-    }
-
-    for (let step of validSteps) {
-      if (!step.sla_hours || step.sla_hours <= 0) {
-        setError("Each step must have SLA hours greater than 0");
+    for (let roleWorkflow of roleWorkflows) {
+      if (!roleWorkflow.role) {
+        setError("All roles must be selected");
         return false;
+      }
+
+      if (roleWorkflow.steps.length === 0) {
+        setError(`Role "${roleWorkflow.role}" must have at least one step`);
+        return false;
+      }
+
+      for (let step of roleWorkflow.steps) {
+        if (!step.target_role) {
+          setError(`All steps must have a target role selected`);
+          return false;
+        }
+
+        if (!step.sla_hours || step.sla_hours <= 0) {
+          setError("Each step must have SLA hours greater than 0");
+          return false;
+        }
       }
     }
 
@@ -175,19 +257,20 @@ const AddWorkflowDialog = ({
         return;
       }
 
-      // Filter out empty steps and prepare payload
-      const validSteps = steps
-        .filter((step) => step.role)
-        .map((step) => ({
-          role: step.role,
-          sla_hours: step.sla_hours,
-        }));
-
+      // Prepare the payload
       const workflowData = {
-        version: version.trim(),
+        ticket_type: ticketType.trim(),
         workflow_name: workflowName.trim(),
         description: description.trim(),
-        steps: validSteps,
+        is_active: true,
+        roles: roleWorkflows.map((roleWorkflow) => ({
+          role: roleWorkflow.role,
+          steps: roleWorkflow.steps.map((step) => ({
+            step_order: step.step_order,
+            target_role: step.target_role,
+            sla_hours: step.sla_hours,
+          })),
+        })),
       };
 
       console.log("Creating workflow with payload:", workflowData);
@@ -218,7 +301,7 @@ const AddWorkflowDialog = ({
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogTitle>Create New Workflow</DialogTitle>
 
         <DialogContent>
@@ -236,7 +319,17 @@ const AddWorkflowDialog = ({
               fullWidth
               value={workflowName}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="e.g., Support Ticket"
+              placeholder="e.g., Repair Workflow"
+              disabled={isCreating}
+            />
+
+            {/* Ticket Type */}
+            <TextField
+              label="Ticket Type"
+              fullWidth
+              value={ticketType}
+              onChange={(e) => handleTicketTypeChange(e.target.value)}
+              placeholder="e.g., Repair an Item"
               disabled={isCreating}
             />
 
@@ -252,17 +345,7 @@ const AddWorkflowDialog = ({
               disabled={isCreating}
             />
 
-            {/* Workflow Version */}
-            <TextField
-              label="Workflow Version"
-              fullWidth
-              value={version}
-              onChange={(e) => handleVersionChange(e.target.value)}
-              placeholder="e.g., 1.0 or 10"
-              disabled={isCreating}
-            />
-
-            {/* Workflow Steps */}
+            {/* Role Workflows */}
             <Box>
               <Box
                 sx={{
@@ -273,120 +356,239 @@ const AddWorkflowDialog = ({
                 }}
               >
                 <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
-                  Workflow Steps ({steps.filter((s) => s.role).length})
+                  Roles & Steps ({roleWorkflows.length})
                 </Typography>
                 <Button
                   size="small"
                   variant="outlined"
-                  onClick={handleAddStep}
+                  onClick={handleAddRoleWorkflow}
                   disabled={isCreating}
+                  startIcon={<AddIcon />}
                 >
-                  + Add Step
+                  Add Role
                 </Button>
               </Box>
 
-              <Stack spacing={2}>
-                {steps.map((step, index) => (
+              <Stack spacing={3}>
+                {roleWorkflows.map((roleWorkflow, roleIndex) => (
                   <Box
-                    key={index}
+                    key={roleIndex}
                     sx={{
-                      display: "flex",
-                      gap: 1,
-                      alignItems: "flex-start",
                       p: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: 1,
+                      border: "2px solid",
+                      borderColor: "primary.light",
+                      borderRadius: 2,
                       bgcolor: "background.paper",
                     }}
                   >
-                    {/* Step Order */}
+                    {/* Role Selection */}
                     <Box
                       sx={{
-                        minWidth: 40,
-                        pt: 1,
-                        textAlign: "center",
-                        fontWeight: 600,
-                        color: "primary.main",
+                        display: "flex",
+                        gap: 1,
+                        alignItems: "flex-start",
+                        mb: 3,
                       }}
                     >
-                      {index + 1}
+                      <FormControl fullWidth disabled={isCreating}>
+                        <InputLabel>Select Main Role</InputLabel>
+                        <Select
+                          value={roleWorkflow.role}
+                          onChange={(e) =>
+                            handleRoleChange(roleIndex, e.target.value)
+                          }
+                          label="Select Main Role"
+                        >
+                          <MenuItem value="">
+                            <em>Select a role...</em>
+                          </MenuItem>
+                          {getAvailableMainRoles(roleIndex).map((role) => (
+                            <MenuItem key={role.id} value={role.name}>
+                              {role.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+
+                      {roleWorkflows.length > 1 && (
+                        <IconButton
+                          size="small"
+                          onClick={() => handleRemoveRoleWorkflow(roleIndex)}
+                          disabled={isCreating}
+                          sx={{
+                            mt: 1,
+                            color: "error.main",
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
                     </Box>
 
-                    {/* Role Select */}
-                    <FormControl fullWidth disabled={isCreating}>
-                      <InputLabel>Select Role</InputLabel>
-                      <Select
-                        value={step.role}
-                        onChange={(e) =>
-                          handleStepRoleChange(index, e.target.value)
-                        }
-                        label="Select Role"
-                      >
-                        <MenuItem value="">
-                          <em>Select a role...</em>
-                        </MenuItem>
-                        {getAvailableRolesForStep(index).map((role) => (
-                          <MenuItem key={role.id} value={role.name}>
-                            {role.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    {/* Steps for this role */}
+                    {roleWorkflow.role && (
+                      <Box>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            mb: 2,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: "text.secondary",
+                              fontWeight: 600,
+                              ml: 1,
+                            }}
+                          >
+                            Steps ({roleWorkflow.steps.length})
+                          </Typography>
+                          <Button
+                            size="small"
+                            variant="text"
+                            onClick={() => handleAddStep(roleIndex)}
+                            disabled={isCreating}
+                            startIcon={<AddIcon />}
+                          >
+                            Add Step
+                          </Button>
+                        </Box>
 
-                    {/* SLA Hours */}
-                    <TextField
-                      label="SLA Hours"
-                      type="number"
-                      value={step.sla_hours || ""}
-                      onChange={(e) =>
-                        handleStepSlaChange(index, e.target.value)
-                      }
-                      placeholder="0"
-                      disabled={isCreating}
-                      inputProps={{ min: "1" }}
-                      sx={{ width: "120px" }}
-                    />
+                        <Stack spacing={2} sx={{ ml: 1 }}>
+                          {roleWorkflow.steps.map((step, stepIndex) => (
+                            <Box
+                              key={stepIndex}
+                              sx={{
+                                display: "flex",
+                                gap: 1,
+                                alignItems: "flex-start",
+                                p: 1.5,
+                                border: "1px solid",
+                                borderColor: "divider",
+                                borderRadius: 1,
+                                bgcolor: "grey.50",
+                              }}
+                            >
+                              {/* Step Order */}
+                              <Box
+                                sx={{
+                                  minWidth: 35,
+                                  pt: 1,
+                                  textAlign: "center",
+                                  fontWeight: 600,
+                                  color: "primary.main",
+                                  fontSize: "0.9rem",
+                                }}
+                              >
+                                {step.step_order}
+                              </Box>
 
-                    {/* Delete Button */}
-                    {steps.length > 1 && (
-                      <IconButton
-                        size="small"
-                        onClick={() => handleRemoveStep(index)}
-                        disabled={isCreating}
-                        sx={{ mt: 1 }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                              {/* Target Role Select */}
+                              <FormControl fullWidth disabled={isCreating}>
+                                <InputLabel>Target Role</InputLabel>
+                                <Select
+                                  value={step.target_role}
+                                  onChange={(e) =>
+                                    handleTargetRoleChange(
+                                      roleIndex,
+                                      stepIndex,
+                                      e.target.value
+                                    )
+                                  }
+                                  label="Target Role"
+                                >
+                                  <MenuItem value="">
+                                    <em>Select target role...</em>
+                                  </MenuItem>
+                                  {availableRoles.map((role) => (
+                                    <MenuItem
+                                      key={role.id}
+                                      value={role.name}
+                                    >
+                                      {role.name}
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+
+                              {/* SLA Hours */}
+                              <TextField
+                                label="SLA Hours"
+                                type="number"
+                                value={step.sla_hours || ""}
+                                onChange={(e) =>
+                                  handleSlaChange(roleIndex, stepIndex, e.target.value)
+                                }
+                                placeholder="0"
+                                disabled={isCreating}
+                                inputProps={{ min: "1" }}
+                                sx={{ width: "120px" }}
+                              />
+
+                              {/* Delete Button */}
+                              {roleWorkflow.steps.length > 1 && (
+                                <IconButton
+                                  size="small"
+                                  onClick={() =>
+                                    handleRemoveStep(roleIndex, stepIndex)
+                                  }
+                                  disabled={isCreating}
+                                  sx={{ mt: 0.5 }}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              )}
+                            </Box>
+                          ))}
+                        </Stack>
+                      </Box>
                     )}
                   </Box>
                 ))}
               </Stack>
             </Box>
 
-            {/* Summary of steps */}
-            {steps.filter((s) => s.role).length > 0 && (
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ color: "text.secondary", mb: 1 }}
-                >
-                  Steps Summary:
-                </Typography>
-                <Stack spacing={1}>
-                  {steps
-                    .filter((s) => s.role)
-                    .map((step, index) => (
-                      <Chip
-                        key={index}
-                        label={`Step ${index + 1}: ${step.role} (${step.sla_hours}h)`}
-                        size="small"
-                        variant="outlined"
-                      />
+            {/* Summary of all steps */}
+            {roleWorkflows.length > 0 &&
+              roleWorkflows.some((rw) => rw.role && rw.steps.length > 0) && (
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ color: "text.secondary", mb: 2 }}
+                  >
+                    Workflow Summary:
+                  </Typography>
+                  <Stack spacing={2}>
+                    {roleWorkflows.map((roleWorkflow, roleIndex) => (
+                      <Box key={roleIndex}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 600,
+                            color: "primary.main",
+                            mb: 1,
+                          }}
+                        >
+                          {roleWorkflow.role}
+                        </Typography>
+                        <Stack spacing={1} sx={{ ml: 2 }}>
+                          {roleWorkflow.steps.map((step, stepIndex) => (
+                            <Chip
+                              key={stepIndex}
+                              label={`Step ${step.step_order}: ${step.target_role} → ${step.sla_hours}h`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          ))}
+                        </Stack>
+                      </Box>
                     ))}
-                </Stack>
-              </Box>
-            )}
+                  </Stack>
+                </Box>
+              )}
           </Stack>
         </DialogContent>
 
@@ -400,8 +602,8 @@ const AddWorkflowDialog = ({
             disabled={
               !workflowName.trim() ||
               !description.trim() ||
-              !version.trim() ||
-              steps.filter((s) => s.role).length === 0 ||
+              roleWorkflows.length === 0 ||
+              roleWorkflows.some((rw) => !rw.role || rw.steps.length === 0) ||
               isCreating
             }
           >

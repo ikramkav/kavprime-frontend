@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Box, Typography, Button, Fab } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Fab,
+  Tabs,
+  Tab,
+} from "@mui/material";
 import { Add } from "@mui/icons-material";
 import { getUserData } from "@/utils/auth";
 import CreateTicketDialog from "./CreateTicketDialog";
@@ -10,14 +17,26 @@ import {
   useGetAllTicketsQuery,
 } from "@/redux/services/tickets/ticketsApi";
 import TicketCard from "./TicketCard";
+import AssignedTickets from "./AssignedTickets";
 
 export default function TicketManagement() {
   const { userId, role } = getUserData();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [tabValue, setTabValue] = useState(0);
+
+  const handleTabChange = (
+    event: React.SyntheticEvent,
+    newValue: number
+  ) => {
+    setTabValue(newValue);
+  };
 
   // Check if user can create tickets (all except ADMIN)
   const canCreateTicket = role !== "ADMIN" && role !== null;
-  const employeeId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const employeeId =
+    typeof window !== "undefined"
+      ? localStorage.getItem("user_id")
+      : null;
 
   // Determine if user is admin or approver role
   const isAdminOrApprover =
@@ -44,12 +63,32 @@ export default function TicketManagement() {
   });
 
   // Determine which data and loading state to use
-  const tickets = isAdminOrApprover ? allTickets : employeeTickets;
-  const isLoading = isAdminOrApprover ? allTicketsLoading : employeeLoading;
-  const isError = isAdminOrApprover ? allTicketsError : employeeError;
+  const tickets = isAdminOrApprover
+    ? allTickets
+    : employeeTickets;
+
+  const isLoading = isAdminOrApprover
+    ? allTicketsLoading
+    : employeeLoading;
+
+  const isError = isAdminOrApprover
+    ? allTicketsError
+    : employeeError;
 
   if (isLoading) return <p>Loading...</p>;
   if (isError) return <p>Something went wrong</p>;
+
+  // 🔹 Sort tickets (keeping your logic)
+  const sortedTickets = [...tickets].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() -
+      new Date(a.created_at).getTime()
+  );
+
+  // 🔹 Assigned Tickets (adjust field if needed)
+  const assignedTickets = sortedTickets.filter(
+    (ticket) => ticket.assigned_to === Number(userId)
+  );
 
   return (
     <Box sx={{ p: 3 }}>
@@ -76,6 +115,7 @@ export default function TicketManagement() {
               "Create and track your tickets"}
           </Typography>
         </Box>
+
         {canCreateTicket && (
           <Button
             variant="contained"
@@ -88,8 +128,18 @@ export default function TicketManagement() {
         )}
       </Box>
 
+      {/* 🔹 Tabs */}
+      <Tabs
+        value={tabValue}
+        onChange={handleTabChange}
+        sx={{ mb: 3 }}
+      >
+        <Tab label="All Tickets" />
+        <Tab label="Assigned Tickets" />
+      </Tabs>
+
       {/* No Tickets Message */}
-      {tickets.length === 0 && (
+      {tabValue === 0 && sortedTickets.length === 0 && (
         <Typography
           variant="body1"
           color="text.secondary"
@@ -99,31 +149,24 @@ export default function TicketManagement() {
         </Typography>
       )}
 
-      {/* Tickets List */}
-      {/* {tickets.map((ticket) => (
-        <TicketCard
-          key={ticket.id}
-          ticket={ticket}
-          canUpdate={true}
-          employeeName={`Employee ${ticket.employee_id}`}
-          onUpdateClick={(t) => console.log("Update clicked", t)}
-        />
-      ))} */}
-      {/* Tickets List */}
-      {[...tickets]
-        .sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        )
-        .map((ticket) => (
+     {tabValue === 1 && <AssignedTickets />}
+      {/* Ticket Cards */}
+      <Box>
+        {(tabValue === 0
+          ? sortedTickets
+          : assignedTickets
+        ).map((ticket) => (
           <TicketCard
             key={ticket.id}
             ticket={ticket}
             canUpdate={true}
             employeeName={`Employee ${ticket.employee_id}`}
-            onUpdateClick={(t) => console.log("Update clicked", t)}
+            onUpdateClick={(t) =>
+              console.log("Update clicked", t)
+            }
           />
         ))}
+      </Box>
 
       {/* Floating Action Button for Mobile */}
       {canCreateTicket && (
