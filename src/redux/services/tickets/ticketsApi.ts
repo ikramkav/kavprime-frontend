@@ -29,10 +29,10 @@ export interface CreateActionRequest {
   ticket_id: number;
   action: string;
   remarks: string;
-  role_email_map: {
+  role_email_map?: {
     [key: string]: string;
   };
-  role: string;
+  role?: string;
 }
 
 export interface UpdateTicketStatusRequest {

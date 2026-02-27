@@ -55,9 +55,9 @@ export default function AddUserDialog({ open, onClose }: AddUserDialogProps) {
 
   const employmentStatusOptions = [
     { value: "ONBOARDING", label: "Onboarding" },
-    { value: "ACTIVE", label: "Active" },
-    { value: "INACTIVE", label: "Inactive" },
-    { value: "OFFBOARDING", label: "offboarding" },
+    // { value: "ACTIVE", label: "Active" },
+    // { value: "INACTIVE", label: "Inactive" },
+    // { value: "OFFBOARDING", label: "offboarding" },
   ];
 
   const validateForm = () => {

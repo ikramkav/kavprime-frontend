@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -11,6 +11,8 @@ import {
   Box,
   useTheme,
   CircularProgress,
+  Typography,
+  MenuItem,
 } from "@mui/material";
 import { useAddInventoryMutation } from "@/redux/services/inventory/inventoryApi";
 import { toast } from "react-toastify";
@@ -18,29 +20,25 @@ import { toast } from "react-toastify";
 interface AddInventoryDialogProps {
   open: boolean;
   onClose: () => void;
+  category?: string; // 👈 receive category
 }
 
 export default function AddInventoryDialog({
   open,
   onClose,
+  category,
 }: AddInventoryDialogProps) {
   const theme = useTheme();
   const [addInventory, { isLoading }] = useAddInventoryMutation();
 
-  const [formData, setFormData] = useState({
-    item_code: "",
-    item_name: "",
-    category: "",
-    brand: "",
-    model: "",
-    description: "",
-    total_quantity: "",
-    minimum_stock_level: "",
-    purchase_date: "",
-    purchase_price_per_item: "",
-    vendor_name: "",
-    attachment: null as File | null,
-  });
+  const [formData, setFormData] = useState<any>({});
+
+  useEffect(() => {
+    setFormData((prev: any) => ({
+      ...prev,
+      category: category || "",
+    }));
+  }, [category]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -53,257 +51,135 @@ export default function AddInventoryDialog({
     e.preventDefault();
 
     try {
-      const result = await addInventory({
-        ...formData,
-        total_quantity: parseInt(formData.total_quantity),
-        minimum_stock_level: parseInt(formData.minimum_stock_level),
-        purchase_price_per_item: parseFloat(formData.purchase_price_per_item),
-      }).unwrap();
+      const result = await addInventory(formData).unwrap();
       toast.success(result.message || "Inventory added successfully!");
       handleClose();
     } catch (err: any) {
       toast.error(
-        err?.data?.error || err?.data?.message || "Failed to add inventory",
+        err?.data?.error || err?.data?.message || "Failed to add inventory"
       );
     }
   };
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-
-    setFormData({
-      ...formData,
-      attachment: file,
-    });
-  };
 
   const handleClose = () => {
-    setFormData({
-      item_code: "",
-      item_name: "",
-      category: "",
-      brand: "",
-      model: "",
-      description: "",
-      total_quantity: "",
-      minimum_stock_level: "",
-      purchase_date: "",
-      purchase_price_per_item: "",
-      vendor_name: "",
-      attachment: null,
-    });
+    setFormData({});
     onClose();
   };
 
+  const renderCommonLifecycle = () => (
+    <>
+      <Typography fontWeight={600}>Device Lifecycle</Typography>
+
+      <TextField fullWidth label="Status" name="status" onChange={handleChange} />
+      <TextField fullWidth label="Condition" name="condition" onChange={handleChange} />
+      <TextField fullWidth label="Assigned To" name="assigned_to" onChange={handleChange} />
+      <TextField fullWidth label="Assigned Date" type="date" name="assigned_date" onChange={handleChange} InputLabelProps={{ shrink: true }} />
+      <TextField fullWidth label="Returned Date" type="date" name="returned_date" onChange={handleChange} InputLabelProps={{ shrink: true }} />
+      <TextField fullWidth label="Current Location" name="current_location" onChange={handleChange} />
+    </>
+  );
+
+  const renderPurchase = () => (
+    <>
+      <Typography fontWeight={600}>Purchase & Warranty</Typography>
+
+      <TextField fullWidth type="date" label="Purchase Date" name="purchase_date" onChange={handleChange} InputLabelProps={{ shrink: true }} />
+      <TextField fullWidth label="Purchase Price" name="purchase_price" onChange={handleChange} />
+      <TextField fullWidth label="Vendor Name" name="vendor_name" onChange={handleChange} />
+      <TextField fullWidth label="Invoice Number" name="invoice_number" onChange={handleChange} />
+      <TextField fullWidth type="date" label="Warranty Start" name="warranty_start" onChange={handleChange} InputLabelProps={{ shrink: true }} />
+      <TextField fullWidth type="date" label="Warranty End" name="warranty_end" onChange={handleChange} InputLabelProps={{ shrink: true }} />
+      <TextField fullWidth label="Warranty Status" name="warranty_status" onChange={handleChange} />
+    </>
+  );
+
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: "16px",
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          fontWeight: 600,
-          fontSize: "1.25rem",
-        }}
-      >
-        Add New Inventory Item
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+      <DialogTitle fontWeight={600}>
+        Add New {category}
       </DialogTitle>
+
       <form onSubmit={handleSubmit}>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-            {/* Row 1: Item Code and Item Name */}
-            <Box sx={{ display: "flex", gap: 2.5, flexWrap: "wrap" }}>
-              <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                <TextField
-                  fullWidth
-                  label="Item Code"
-                  name="item_code"
-                  value={formData.item_code}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </Box>
-              <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                <TextField
-                  fullWidth
-                  label="Item Name"
-                  name="item_name"
-                  value={formData.item_name}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </Box>
-            </Box>
 
-            {/* Row 2: Category and Brand */}
-            <Box sx={{ display: "flex", gap: 2.5, flexWrap: "wrap" }}>
-              <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                <TextField
-                  fullWidth
-                  label="Category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </Box>
-              <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                <TextField
-                  fullWidth
-                  label="Brand"
-                  name="brand"
-                  value={formData.brand}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </Box>
-            </Box>
+            {/* Asset Identification */}
+            <Typography fontWeight={600}>Asset Identification</Typography>
 
-            {/* Row 3: Model and Vendor Name */}
-            <Box sx={{ display: "flex", gap: 2.5, flexWrap: "wrap" }}>
-              <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                <TextField
-                  fullWidth
-                  label="Model"
-                  name="model"
-                  value={formData.model}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </Box>
-              <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                <TextField
-                  fullWidth
-                  label="Vendor Name"
-                  name="vendor_name"
-                  value={formData.vendor_name}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </Box>
-            </Box>
+            <TextField fullWidth label="Asset Tag" name="asset_tag" onChange={handleChange} />
+            <TextField fullWidth label="Serial Number" name="serial_number" onChange={handleChange} />
+            <TextField fullWidth label="Brand" name="brand" onChange={handleChange} />
+            <TextField fullWidth label="Model Name" name="model_name" onChange={handleChange} />
+            <TextField fullWidth label="Type" name="type" onChange={handleChange} />
 
-            {/* Row 4: Quantities and Price */}
-            <Box sx={{ display: "flex", gap: 2.5, flexWrap: "wrap" }}>
-              <Box sx={{ flex: "1 1 30%", minWidth: "150px" }}>
-                <TextField
-                  fullWidth
-                  label="Total Quantity"
-                  name="total_quantity"
-                  type="number"
-                  value={formData.total_quantity}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                  inputProps={{ min: 1 }}
-                />
-              </Box>
-              <Box sx={{ flex: "1 1 30%", minWidth: "150px" }}>
-                <TextField
-                  fullWidth
-                  label="Minimum Stock Level"
-                  name="minimum_stock_level"
-                  type="number"
-                  value={formData.minimum_stock_level}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                  inputProps={{ min: 0 }}
-                />
-              </Box>
-              <Box sx={{ flex: "1 1 30%", minWidth: "150px" }}>
-                <TextField
-                  fullWidth
-                  label="Purchase Price (per item)"
-                  name="purchase_price_per_item"
-                  type="number"
-                  value={formData.purchase_price_per_item}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                  inputProps={{ min: 0, step: "0.01" }}
-                />
-              </Box>
-            </Box>
+            {/* 🔥 Category Specific Fields */}
 
-            {/* Row 5: Purchase Date */}
-            <Box sx={{ display: "flex", gap: 2.5, flexWrap: "wrap" }}>
-              <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
+            {category === "Laptop" && (
+              <>
+                <Typography fontWeight={600}>Hardware Specifications</Typography>
+
+                <TextField fullWidth label="Processor" name="processor" onChange={handleChange} />
+                <TextField fullWidth label="RAM Size" name="ram_size" onChange={handleChange} />
+                <TextField fullWidth label="Storage Type" name="storage_type" onChange={handleChange} />
+                <TextField fullWidth label="Storage Capacity" name="storage_capacity" onChange={handleChange} />
+                <TextField fullWidth label="Graphics Card" name="graphics_card" onChange={handleChange} />
+                <TextField fullWidth label="Screen Size" name="screen_size" onChange={handleChange} />
+                <TextField fullWidth label="OS Installed" name="os_installed" onChange={handleChange} />
+              </>
+            )}
+
+            {category === "Mouse" && (
+              <>
+                <Typography fontWeight={600}>Technical Specifications</Typography>
+
                 <TextField
+                  select
                   fullWidth
-                  label="Purchase Date"
-                  name="purchase_date"
-                  type="date"
-                  value={formData.purchase_date}
+                  label="Connectivity Type"
+                  name="connectivity_type"
                   onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                />
-              </Box>
-            </Box>
+                >
+                  <MenuItem value="USB Wired">USB Wired</MenuItem>
+                  <MenuItem value="Bluetooth">Bluetooth</MenuItem>
+                </TextField>
+              </>
+            )}
 
-            <Box sx={{ display: "flex", gap: 2.5, flexWrap: "wrap" }}>
-              <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                <TextField
-                  fullWidth
-                  label="Attachment"
-                  name="attachment"
-                  type="file"
-                  onChange={handleFileChange}
-                  disabled={isLoading}
-                  InputLabelProps={{ shrink: true }}
-                  inputProps={{
-                    accept: ".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls",
-                  }}
-                />
-              </Box>
-            </Box>
+            {category === "LCD" && (
+              <>
+                <Typography fontWeight={600}>Technical Specifications</Typography>
 
-            {/* Row 6: Description */}
-            <TextField
-              fullWidth
-              label="Description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              multiline
-              rows={3}
-              disabled={isLoading}
-            />
+                <TextField fullWidth label="Screen Size (inch)" name="screen_size_inch" onChange={handleChange} />
+                <TextField fullWidth label="Resolution" name="resolution" onChange={handleChange} />
+                <TextField fullWidth label="Panel Type" name="panel_type" onChange={handleChange} />
+                <TextField fullWidth label="Touchscreen (Yes/No)" name="touchscreen" onChange={handleChange} />
+                <TextField fullWidth label="Curved Screen (Yes/No)" name="curved_screen" onChange={handleChange} />
+              </>
+            )}
+
+            {category === "Handfree" && (
+              <>
+                <Typography fontWeight={600}>Technical Specifications</Typography>
+
+                <TextField fullWidth label="Connectivity Type" name="connectivity_type" onChange={handleChange} />
+              </>
+            )}
+
+            {renderPurchase()}
+            {renderCommonLifecycle()}
+
+            <Typography fontWeight={600}>Additional Details</Typography>
+            <TextField fullWidth multiline rows={3} label="Remarks" name="remarks" onChange={handleChange} />
           </Box>
         </DialogContent>
+
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button
-            onClick={handleClose}
-            disabled={isLoading}
-            sx={{ textTransform: "none" }}
-          >
-            Cancel
-          </Button>
+          <Button onClick={handleClose}>Cancel</Button>
           <Button
             type="submit"
             variant="contained"
             disabled={isLoading}
             endIcon={isLoading && <CircularProgress size={16} />}
-            sx={{
-              textTransform: "none",
-              px: 3,
-            }}
           >
             {isLoading ? "Adding..." : "Add Item"}
           </Button>
