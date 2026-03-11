@@ -1,7 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { Box, Button, Typography, useTheme, Tabs, Tab } from "@mui/material";
+import {
+  Box,
+  Button,
+  Typography,
+  useTheme,
+  Tabs,
+  Tab,
+  Menu,
+  MenuItem,
+} from "@mui/material";
 import { Add, SendOutlined, Inventory2Outlined } from "@mui/icons-material";
 import {
   useGetInventoryListQuery,
@@ -12,18 +21,34 @@ import AddInventoryDialog from "./AddInventoryDialog";
 import EditInventoryDialog from "./EditInventoryDialog";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 import IssueInventoryDialog from "./IssueInventoryDialog";
-import AssetsManagement from "./AssetsManagement"; // 🔹 NEW
+import AssetsManagement from "./AssetsManagement";
 
 export default function InventoryManagement() {
   const theme = useTheme();
   const { data, isLoading, isError } = useGetInventoryListQuery(undefined);
 
-  const [currentTab, setCurrentTab] = useState<"inventory" | "assets">("inventory"); // 🔹 NEW
+  const [currentTab, setCurrentTab] = useState<"inventory" | "assets">(
+    "inventory",
+  );
+
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+
+  // 🔹 Dropdown state
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const openMenu = Boolean(anchorEl);
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
 
   const handleEdit = (item: InventoryItem) => {
     setSelectedItem(item);
@@ -33,6 +58,11 @@ export default function InventoryManagement() {
   const handleDelete = (item: InventoryItem) => {
     setSelectedItem(item);
     setDeleteDialogOpen(true);
+  };
+  const handleMenuItemClick = (category: string) => {
+    setSelectedCategory(category);
+    setAddDialogOpen(true);
+    handleMenuClose();
   };
 
   return (
@@ -55,7 +85,9 @@ export default function InventoryManagement() {
               mb: 0.5,
             }}
           >
-            {currentTab === "inventory" ? "Inventory Management" : "Asset Management"}
+            {currentTab === "inventory"
+              ? "Inventory Management"
+              : "Asset Management"}
           </Typography>
           <Typography
             variant="body2"
@@ -63,13 +95,13 @@ export default function InventoryManagement() {
               color: theme.palette.text.secondary,
             }}
           >
-            {currentTab === "inventory" 
-              ? "Manage inventory items and stock levels" 
+            {currentTab === "inventory"
+              ? "Manage inventory items and stock levels"
               : "Track and manage issued inventory assets"}
           </Typography>
         </Box>
-        
-        {/* 🔹 Buttons - Only show for inventory tab */}
+
+        {/* Buttons - Only show for inventory tab */}
         {currentTab === "inventory" && (
           <Box sx={{ display: "flex", gap: 2 }}>
             <Button
@@ -91,11 +123,12 @@ export default function InventoryManagement() {
             >
               Issue Item
             </Button>
-            
+
+            {/* 🔹 Dropdown Button */}
             <Button
               variant="contained"
               startIcon={<Add />}
-              onClick={() => setAddDialogOpen(true)}
+              onClick={handleMenuClick}
               sx={{
                 textTransform: "none",
                 px: 3,
@@ -105,33 +138,61 @@ export default function InventoryManagement() {
             >
               Add Item
             </Button>
+
+            <Menu anchorEl={anchorEl} open={openMenu} onClose={handleMenuClose}>
+              <MenuItem onClick={() => handleMenuItemClick("Laptop")}>
+                Laptop
+              </MenuItem>
+
+              <MenuItem onClick={() => handleMenuItemClick("Mouse")}>
+                Mouse
+              </MenuItem>
+
+              <MenuItem onClick={() => handleMenuItemClick("LCD")}>
+                LCD
+              </MenuItem>
+
+              <MenuItem onClick={() => handleMenuItemClick("Handfree")}>
+                Handfree
+              </MenuItem>
+            </Menu>
           </Box>
         )}
       </Box>
 
-      {/* 🔹 NEW: Tabs */}
+      {/* Tabs */}
       <Tabs
         value={currentTab}
         onChange={(e, newValue) => setCurrentTab(newValue)}
-        sx={{ mb: 3, borderBottom: 1, borderColor: "divider" }}
+        sx={{
+          mb: 3,
+          borderBottom: 1,
+          borderColor: "divider",
+        }}
       >
-        <Tab 
-          label="Inventory Items" 
-          value="inventory" 
+        <Tab
+          label="Inventory Items"
+          value="inventory"
           icon={<Inventory2Outlined />}
           iconPosition="start"
-          sx={{ textTransform: "none", fontSize: "1rem" }} 
+          sx={{
+            textTransform: "none",
+            fontSize: "1rem",
+          }}
         />
-        <Tab 
-          label="Issued Assets" 
-          value="assets" 
+        <Tab
+          label="Issued Assets"
+          value="assets"
           icon={<SendOutlined />}
           iconPosition="start"
-          sx={{ textTransform: "none", fontSize: "1rem" }} 
+          sx={{
+            textTransform: "none",
+            fontSize: "1rem",
+          }}
         />
       </Tabs>
 
-      {/* 🔹 Conditional Rendering based on tab */}
+      {/* Conditional Rendering */}
       {currentTab === "inventory" ? (
         <InventoryTable
           inventory={data || []}
@@ -144,9 +205,10 @@ export default function InventoryManagement() {
         <AssetsManagement />
       )}
 
-      {/* Dialogs - Only for inventory tab */}
+      {/* Dialogs */}
       <AddInventoryDialog
         open={addDialogOpen}
+        category={selectedCategory} 
         onClose={() => setAddDialogOpen(false)}
       />
 

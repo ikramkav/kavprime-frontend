@@ -61,7 +61,7 @@ export default function AssignedTicketCard({
       await addAction({
         ticket_id: ticket.ticket_id,
         action: selectedAction,
-        remarks: remarks || undefined,
+        remarks: remarks,
       }).unwrap();
 
       setDialogOpen(false);

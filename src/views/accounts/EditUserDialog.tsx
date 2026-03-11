@@ -24,7 +24,7 @@ interface EditUserDialogProps {
 
 const roles = ["ADMIN", "EMPLOYEE", "PMO", "SENIOR_PMO", "FINANCE"];
 const designations = ["associate_se", "senior_se", "manager", "senior_manager"];
-const employmentStatuses = ["ONBOARDING", "ACTIVE", "EXITED","OFFBOARDING"];
+const employmentStatuses = [ "ACTIVE", "EXITED","OFFBOARDING"];
 
 export default function EditUserDialog({
   open,
