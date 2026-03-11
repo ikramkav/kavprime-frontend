@@ -9,6 +9,7 @@ import {
   AttachMoney,
   AdminPanelSettings,
   Assessment,
+  Storefront,
 } from "@mui/icons-material";
 import WorkspacesIcon from '@mui/icons-material/Workspaces';
 
@@ -26,6 +27,7 @@ export const getNavigationByRole = (role: string): NavigationItem[] => {
       { title: "Inventory Management", path: "/dashboard/inventory", icon: Inventory },
       { title: "Ticket Management", path: "/dashboard/tickets", icon: ConfirmationNumber },
       { title: "Workflows", path: "/dashboard/workflow", icon: WorkspacesIcon },
+      { title: "Vendors", path: "/dashboard/vendors", icon: Storefront },
     ],
     EMPLOYEE: [
       { title: "Dashboard", path: "/dashboard", icon: Dashboard },

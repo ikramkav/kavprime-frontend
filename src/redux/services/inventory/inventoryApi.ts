@@ -55,10 +55,19 @@ export interface DeleteInventoryResponse {
 }
 
 export interface IssueInventoryRequest {
-  inventory_id: number;
+  /**
+   * Backend expects `asset_id` (selected inventory item id in UI).
+   * Keeping `inventory_id` optional for compatibility with older usage.
+   */
+  asset_id: number;
+  inventory_id?: number;
   employee_id: number;
   issued_by_id: number;
   quantity_issued: number;
+  issue_date: string;
+  location: string;
+  issue_reason: string;
+  remarks?: string;
 }
 
 export interface IssueInventoryResponse {
@@ -168,6 +177,34 @@ export interface GetInventoryAssetsResponse {
   assets: InventoryAssetDetail[];
 }
 
+export interface AddVendorRequest {
+  name: string;
+  address: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+  gst_number: string;
+}
+
+export interface AddVendorResponse {
+  message?: string;
+  id?: number;
+}
+
+export interface Vendor {
+  id: number;
+  name: string;
+  address: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+  gst_number: string;
+}
+
+export interface GetVendorsResponse {
+  vendors: Vendor[];
+}
+
 export interface GetAssetDetailResponse {
   id: number;
   inventory: {
@@ -212,26 +249,24 @@ export const inventoryApi = baseApi.injectEndpoints({
 
     // Add inventory endpoint
     // Add inventory endpoint
-    addInventory: builder.mutation<AddInventoryResponse, AddInventoryRequest>({
-      query: (inventoryData) => {
-        const formData = new FormData();
-        Object.entries(inventoryData).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            formData.append(key, value as any); // File object will be handled automatically
-          }
-        });
-
-        return {
-          url: "/inventory/add/",
-          method: "POST",
-          body: formData, // send FormData
-        };
-      },
+    // addInventory endpoint — send JSON not FormData
+    addInventory: builder.mutation<AddInventoryResponse, any>({
+      query: (inventoryData) => ({
+        url: "/inventory/add/",
+        method: "POST",
+        body: inventoryData, // ✅ plain object → RTK Query sends as JSON
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
       invalidatesTags: ["Inventory"],
     }),
 
     // Update inventory endpoint
-    updateInventory: builder.mutation< UpdateInventoryResponse, UpdateInventoryRequest >({
+    updateInventory: builder.mutation<
+      UpdateInventoryResponse,
+      UpdateInventoryRequest
+    >({
       query: (inventoryData) => {
         const formData = new FormData();
         Object.entries(inventoryData).forEach(([key, value]) => {
@@ -250,7 +285,10 @@ export const inventoryApi = baseApi.injectEndpoints({
     }),
 
     // Delete inventory endpoint
-    deleteInventory: builder.mutation<DeleteInventoryResponse, DeleteInventoryRequest>({
+    deleteInventory: builder.mutation<
+      DeleteInventoryResponse,
+      DeleteInventoryRequest
+    >({
       query: (data) => ({
         url: "/inventory/delete/",
         method: "DELETE",
@@ -307,6 +345,28 @@ export const inventoryApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Assets"],
     }),
+
+    // Get all vendors
+    getVendors: builder.query<GetVendorsResponse, void>({
+      query: () => ({
+        url: "/inventory/vendors/",
+        method: "GET",
+      }),
+      providesTags: ["Inventory"],
+    }),
+
+    // Add vendor endpoint
+    addVendor: builder.mutation<AddVendorResponse, AddVendorRequest>({
+      query: (vendorData) => ({
+        url: "/inventory/add-vendor/",
+        method: "POST",
+        body: vendorData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
+      invalidatesTags: ["Inventory"],
+    }),
   }),
 });
 
@@ -321,4 +381,6 @@ export const {
   useGetEmployeeAssetsQuery,
   useGetInventoryAssetsQuery,
   useGetAssetDetailQuery,
+  useGetVendorsQuery,
+  useAddVendorMutation,
 } = inventoryApi;

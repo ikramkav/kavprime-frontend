@@ -33,9 +33,14 @@ export default function IssueInventoryDialog({
   const [issueInventory, { isLoading: isIssuing }] = useIssueInventoryMutation();
 
   const [formData, setFormData] = useState({
+    asset_id: "",
     inventory_id: "",
     employee_id: "",
     quantity_issued: "",
+    issue_date: "",
+    location: "",
+    issue_reason: "",
+    remarks: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -62,7 +67,15 @@ export default function IssueInventoryDialog({
     setSuccess(false);
 
     // Validation
-    if (!formData.inventory_id || !formData.employee_id || !formData.quantity_issued) {
+    if (
+      !formData.asset_id ||
+      !formData.inventory_id ||
+      !formData.employee_id ||
+      !formData.quantity_issued ||
+      !formData.issue_date ||
+      !formData.location ||
+      !formData.issue_reason
+    ) {
       setError("Please fill all fields");
       return;
     }
@@ -88,15 +101,33 @@ export default function IssueInventoryDialog({
     }
 
     try {
+      const normalizedIssueDate =
+        formData.issue_date.length === 16
+          ? `${formData.issue_date}:00`
+          : formData.issue_date;
+
       const result = await issueInventory({
-        inventory_id: parseInt(formData.inventory_id),
+        asset_id: parseInt(formData.asset_id),
         employee_id: parseInt(formData.employee_id),
         issued_by_id: parseInt(issuedById),
         quantity_issued: quantityIssued,
+        issue_date: normalizedIssueDate,
+        location: formData.location,
+        issue_reason: formData.issue_reason,
+        remarks: formData.remarks || undefined,
       }).unwrap();
 
       setSuccess(true);
-      setFormData({ inventory_id: "", employee_id: "", quantity_issued: "" });
+      setFormData({
+        asset_id: "",
+        inventory_id: "",
+        employee_id: "",
+        quantity_issued: "",
+        issue_date: "",
+        location: "",
+        issue_reason: "",
+        remarks: "",
+      });
 
       // Close dialog after 1.5 seconds
       setTimeout(() => {
@@ -109,7 +140,16 @@ export default function IssueInventoryDialog({
   };
 
   const handleClose = () => {
-    setFormData({ inventory_id: "", employee_id: "", quantity_issued: "" });
+    setFormData({
+      asset_id: "",
+      inventory_id: "",
+      employee_id: "",
+      quantity_issued: "",
+      issue_date: "",
+      location: "",
+      issue_reason: "",
+      remarks: "",
+    });
     setError(null);
     setSuccess(false);
     onClose();
@@ -120,13 +160,29 @@ export default function IssueInventoryDialog({
       <DialogTitle>Issue Inventory</DialogTitle>
       <DialogContent>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+          {/* Asset ID */}
+          <TextField
+            label="Asset ID"
+            type="number"
+            value={formData.asset_id}
+            onChange={(e) => setFormData({ ...formData, asset_id: e.target.value })}
+            fullWidth
+            inputProps={{ min: 1 }}
+            helperText="Auto-filled when you select an inventory item"
+          />
+
           {/* Inventory Selection */}
           <TextField
             select
             label="Select Inventory Item"
             value={formData.inventory_id}
             onChange={(e) =>
-              setFormData({ ...formData, inventory_id: e.target.value, quantity_issued: "" })
+              setFormData({
+                ...formData,
+                inventory_id: e.target.value,
+                asset_id: e.target.value, // inventory item id == asset_id for this API
+                quantity_issued: "",
+              })
             }
             fullWidth
             disabled={inventoryLoading}
@@ -217,6 +273,36 @@ export default function IssueInventoryDialog({
                 ? `Maximum available: ${selectedInventory.available_quantity}`
                 : "Select an inventory item first"
             }
+          />
+
+          {/* Issue Details */}
+          <TextField
+            label="Issue Date"
+            type="datetime-local"
+            value={formData.issue_date}
+            onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+          />
+          <TextField
+            label="Location"
+            value={formData.location}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            fullWidth
+          />
+          <TextField
+            label="Issue Reason"
+            value={formData.issue_reason}
+            onChange={(e) => setFormData({ ...formData, issue_reason: e.target.value })}
+            fullWidth
+          />
+          <TextField
+            label="Remarks"
+            value={formData.remarks}
+            onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+            fullWidth
+            multiline
+            rows={2}
           />
 
           {/* Error Alert */}
