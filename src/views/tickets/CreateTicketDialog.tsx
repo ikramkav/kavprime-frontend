@@ -61,7 +61,7 @@ export default function CreateTicketDialog({
         const workflow = JSON.parse(workflowData);
 
         const firstStep = workflow?.steps?.find(
-          (step: any) => step.step_order === 1
+          (step: any) => step.step_order === 1,
         );
 
         if (firstStep) {
@@ -114,14 +114,14 @@ export default function CreateTicketDialog({
         description: formData.description,
         assigned_to: Number(assignedTo),
         assigned_to_email: assignedUserEmail,
-        role: role || undefined,
+        // role: role || undefined,
       }).unwrap();
 
       toast.success(result.message || "Ticket created successfully!");
       handleClose();
     } catch (err: any) {
       setError(
-        err?.data?.error || err?.data?.message || "Failed to create ticket"
+        err?.data?.error || err?.data?.message || "Failed to create ticket",
       );
     }
   };

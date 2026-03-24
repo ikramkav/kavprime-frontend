@@ -10,6 +10,8 @@ import {
   MenuItem,
   Snackbar,
   Alert,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import { getUserData } from "@/utils/auth";
 import {
@@ -21,33 +23,26 @@ import { useGetUsersQuery } from "@/redux/services/auth/authApi";
 export default function AssignedTickets() {
   const { userId } = getUserData();
 
-  const { data, isLoading, isError } = useGetAssignedTicketsQuery(Number(userId));
+  const { data, isLoading, isError } = useGetAssignedTicketsQuery(
+    Number(userId),
+  );
   const [addAction] = useAddActionMutation();
 
   const [remarksMap, setRemarksMap] = useState<{ [key: number]: string }>({});
   const { data: usersData } = useGetUsersQuery();
 
   const [processedTickets, setProcessedTickets] = useState<number[]>([]);
-  const [assignedTo, setAssignedTo] = useState<{ [ticketId: number]: number | "" }>({});
-
+  const [assignedTo, setAssignedTo] = useState<{
+    [ticketId: number]: number | "";
+  }>({});
+  const [criticalTicketId, setCriticalTicketId] = useState<number | null>(null);
+  const [isCritical, setIsCritical] = useState<boolean>(false);
   // Snackbar state
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
     severity: "success" | "error";
   }>({ open: false, message: "", severity: "success" });
-
-  // Log all users to console
-  useEffect(() => {
-    if (usersData?.users) {
-      console.log("All Users from GetUsers API:");
-      usersData.users.forEach((user) => {
-        console.log(`Name: ${user.name}, Email: ${user.email}, Role: ${user.role}`);
-      });
-    }
-  }, [usersData]);
-
-  const filteredUsers = usersData?.users || [];
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -56,14 +51,16 @@ export default function AssignedTickets() {
   // Unified function for approve/reject
   const handleAction = async (
     ticketId: number,
-    actionType: "approve" | "reject"
+    actionType: "approve" | "reject",
   ) => {
     if (processedTickets.includes(ticketId)) return;
 
     const selectedUserId = assignedTo[ticketId];
-    const selectedUser = filteredUsers.find((user) => user.id === selectedUserId);
+    const selectedUser = usersData?.users?.find(
+      (user) => user.id === selectedUserId,
+    );
 
-    if (!selectedUser) {
+    if (actionType === "approve" && !selectedUser) {
       setSnackbar({
         open: true,
         message: "Please select a user to assign before proceeding",
@@ -72,19 +69,28 @@ export default function AssignedTickets() {
       return;
     }
 
-    const payload = {
+    const priority =
+      criticalTicketId === ticketId && isCritical ? "CRITICAL" : "NON_CRITICAL";
+
+    const basePayload = {
       ticket_id: ticketId,
       action: actionType,
       remarks:
         remarksMap[ticketId] ||
         (actionType === "approve" ? "Checked and approved" : "Rejected"),
-      role_email_map: {
-        [selectedUser.role]: selectedUser.email,
-      },
       role: "",
+      ...(actionType === "approve" && { priority }),
     };
 
-    console.log("Payload to send:", payload);
+    const payload =
+      actionType === "approve" && selectedUser
+        ? {
+            ...basePayload,
+            role_email_map: {
+              [selectedUser.role]: selectedUser.email,
+            },
+          }
+        : basePayload;
 
     try {
       await addAction(payload).unwrap();
@@ -119,7 +125,9 @@ export default function AssignedTickets() {
     );
 
   // Sort tickets by ticket_id descending (latest on top)
-  const sortedTickets = [...data.tickets].sort((a, b) => b.ticket_id - a.ticket_id);
+  const sortedTickets = [...data.tickets].sort(
+    (a, b) => b.ticket_id - a.ticket_id,
+  );
 
   return (
     <Box>
@@ -168,12 +176,12 @@ export default function AssignedTickets() {
               disabled={isLoading || isProcessed}
               sx={{ mt: 2 }}
             >
-              {filteredUsers.length === 0 && (
+              {usersData?.users?.length === 0 && (
                 <MenuItem disabled value="">
                   No users available
                 </MenuItem>
               )}
-              {filteredUsers.map((user) => (
+              {usersData?.users?.map((user) => (
                 <MenuItem key={user.id} value={user.id}>
                   {user.name} - {user.email}
                 </MenuItem>
@@ -187,6 +195,23 @@ export default function AssignedTickets() {
             <Typography variant="body2" sx={{ mt: 1 }}>
               Employee: {ticket.employee.name}
             </Typography>
+
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={
+                    criticalTicketId === ticket.ticket_id ? isCritical : false
+                  }
+                  onChange={(e) => {
+                    setCriticalTicketId(ticket.ticket_id);
+                    setIsCritical(e.target.checked);
+                  }}
+                  disabled={isProcessed}
+                />
+              }
+              label="Critical"
+              sx={{ mt: 1 }}
+            />
 
             {/* Remarks Field */}
             <TextField

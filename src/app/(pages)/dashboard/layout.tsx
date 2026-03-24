@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
-import { Box, useTheme } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { Box, CircularProgress, useTheme } from "@mui/material";
 import Sidebar, { DRAWER_WIDTH } from "@/components/dashboard/Sidebar";
 import Navbar from "@/components/dashboard/Navbar";
+import { isAuthenticated } from "@/utils/auth";
+import { useRouter } from "next/navigation";
 
 export default function DashboardLayout({
   children,
@@ -11,11 +13,34 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const theme = useTheme();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const authenticated = isAuthenticated();
+
+  useEffect(() => {
+    if (!authenticated) {
+      router.replace("/auth/login");
+    }
+  }, [authenticated, router]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+
+  if (!authenticated) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>

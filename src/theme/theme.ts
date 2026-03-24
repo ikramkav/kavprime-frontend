@@ -38,7 +38,6 @@ export const getTheme = (mode: "light" | "dark") => {
             boxShadow: "none",
             "&:hover": {
               boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-              transform: "translateY(-2px)",
             },
           },
         },
@@ -57,19 +56,19 @@ export const getTheme = (mode: "light" | "dark") => {
       MuiPaper: {
         styleOverrides: {
           root: {
-            ...glass,
+            // ...glass,
             borderRadius: 12,
           },
         },
       },
-      MuiAppBar: {
-        styleOverrides: {
-          root: {
-            ...glass,
-            boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-          },
-        },
-      },
+      // MuiAppBar: {
+      //   styleOverrides: {
+      //     root: {
+      //       ...glass,
+      //       boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+      //     },
+      //   },
+      // },
       MuiDrawer: {
         styleOverrides: {
           paper: glass,
@@ -80,7 +79,6 @@ export const getTheme = (mode: "light" | "dark") => {
           root: {
             "& .MuiOutlinedInput-root": {
               borderRadius: 10,
-              ...glass,
             },
           },
         },
@@ -88,7 +86,7 @@ export const getTheme = (mode: "light" | "dark") => {
       MuiChip: {
         styleOverrides: {
           root: {
-            ...glass,
+            // ...glass,
             borderRadius: 8,
           },
         },
@@ -106,6 +104,31 @@ export const getTheme = (mode: "light" | "dark") => {
           paper: {
             ...glass,
             borderRadius: 12,
+          },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          root: {
+            minWidth: 150,
+          },
+          head: {
+            textTransform: "uppercase",
+          },
+        },
+      },
+      MuiTable: {
+        styleOverrides: {
+          root: {
+            minWidth: 900,
+          },
+        },
+      },
+      MuiTableContainer: {
+        styleOverrides: {
+          root: {
+            border: `1px solid #ddd`,
+            borderRadius: 16,
           },
         },
       },

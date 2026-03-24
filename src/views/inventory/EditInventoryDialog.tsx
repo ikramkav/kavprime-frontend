@@ -49,17 +49,18 @@ export default function EditInventoryDialog({
   useEffect(() => {
     if (item) {
       setFormData({
-        item_code: item.item_code,
-        item_name: item.item_name,
-        category: item.category,
-        brand: item.brand,
-        model: item.model,
-        description: item.description,
+        item_code: item.item_code || item.asset_tag || "",
+        item_name: item.item_name || item.model_name || "",
+        category: item.category || "",
+        brand: item.brand || "",
+        model: item.model || item.model_name || "",
+        description: item.description || "",
         total_quantity: item.total_quantity.toString(),
-        minimum_stock_level: item.minimum_stock_level.toString(),
-        purchase_date: item.purchase_date,
-        purchase_price_per_item: item.purchase_price_per_item,
-        vendor_name: item.vendor_name,
+        minimum_stock_level: (item.minimum_stock_level ?? 0).toString(),
+        purchase_date: item.purchase_date || "",
+        purchase_price_per_item:
+          item.purchase_price_per_item || item.purchase_price || "",
+        vendor_name: item.vendor_name || "",
       });
     }
   }, [item]);

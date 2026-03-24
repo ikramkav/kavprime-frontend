@@ -44,6 +44,7 @@ export default function IssueInventoryDialog({
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const inventoryItems = inventoryData?.assets || [];
 
   // Get logged-in user ID from localStorage (guarded for SSR)
   const loggedInUserId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
@@ -58,7 +59,7 @@ export default function IssueInventoryDialog({
   }, [usersData, loggedInUserId]);
 
   // Get available quantity for selected inventory
-  const selectedInventory = inventoryData?.find(
+  const selectedInventory = inventoryItems.find(
     (item) => item.id === parseInt(formData.inventory_id)
   );
 
@@ -193,13 +194,13 @@ export default function IssueInventoryDialog({
                 Loading...
               </MenuItem>
             ) : (
-              inventoryData
+              inventoryItems
                 ?.filter((item) => item.available_quantity > 0) // Only show available items
                 .map((item) => (
                   <MenuItem key={item.id} value={item.id}>
                     <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
                       <Typography>
-                        {item.item_name} - {item.brand}
+                        {item.item_name || item.model_name || item.asset_tag || `Item #${item.id}`} - {item.brand || "N/A"}
                       </Typography>
                       <Chip
                         label={`Available: ${item.available_quantity}`}

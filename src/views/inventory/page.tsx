@@ -1,41 +1,52 @@
 "use client";
 
-import React, { useState } from "react";
+import { useGetInventoryListQuery } from "@/redux/services/inventory/inventoryApi";
+import { CATEGORY_OPTIONS, STATUS_OPTIONS } from "@/utils/constants";
+import { formatText } from "@/utils/lib";
+import { Search, SendOutlined } from "@mui/icons-material";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import {
   Box,
   Button,
-  Typography,
-  useTheme,
-  Tabs,
-  Tab,
   Menu,
   MenuItem,
+  Paper,
+  Tab,
+  Tabs,
+  TextField,
 } from "@mui/material";
-import { Add, SendOutlined, Inventory2Outlined } from "@mui/icons-material";
-import {
-  useGetInventoryListQuery,
-  InventoryItem,
-} from "@/redux/services/inventory/inventoryApi";
-import InventoryTable from "./InventoryTable";
+import React, { useState } from "react";
 import AddInventoryDialog from "./AddInventoryDialog";
-import EditInventoryDialog from "./EditInventoryDialog";
-import DeleteConfirmDialog from "./DeleteConfirmDialog";
-import IssueInventoryDialog from "./IssueInventoryDialog";
 import AssetsManagement from "./AssetsManagement";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import EditInventoryDialog from "./EditInventoryDialog";
+import InventoryTable from "./InventoryTable";
+import IssueInventoryDialog from "./IssueInventoryDialog";
 
 export default function InventoryManagement() {
-  const theme = useTheme();
-  const { data, isLoading, isError } = useGetInventoryListQuery(undefined);
-
   const [currentTab, setCurrentTab] = useState<"inventory" | "assets">(
-    "inventory",
+    "inventory"
   );
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  const [searchText, setSearchText] = useState("");
+
+  const { data, isLoading, isError } = useGetInventoryListQuery({
+    page,
+    limit,
+    category: categoryFilter || undefined,
+    status: statusFilter || undefined,
+    search: searchText.trim() || undefined,
+  });
 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
   // 🔹 Dropdown state
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -50,12 +61,12 @@ export default function InventoryManagement() {
   };
   const [selectedCategory, setSelectedCategory] = useState<string>("");
 
-  const handleEdit = (item: InventoryItem) => {
+  const handleEdit = (item: any) => {
     setSelectedItem(item);
     setEditDialogOpen(true);
   };
 
-  const handleDelete = (item: InventoryItem) => {
+  const handleDelete = (item: any) => {
     setSelectedItem(item);
     setDeleteDialogOpen(true);
   };
@@ -66,17 +77,23 @@ export default function InventoryManagement() {
   };
 
   return (
-    <Box>
-      {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
+    <Paper elevation={0} sx={{ p: 3 }}>
+      <Tabs
+        value={currentTab}
+        onChange={(_, value) => setCurrentTab(value)}
+        sx={{ mb: 3 }}
       >
-        <Box>
+        <Tab label="Inventory Management" value="inventory" />
+        <Tab label="Issued Assets" value="assets" />
+      </Tabs>
+
+      {currentTab === "assets" ? (
+        <AssetsManagement />
+      ) : (
+        <>
+          {/* Header */}
+          <Box mb={3}>
+            {/* <Box>
           <Typography
             variant="h5"
             sx={{
@@ -99,141 +116,168 @@ export default function InventoryManagement() {
               ? "Manage inventory items and stock levels"
               : "Track and manage issued inventory assets"}
           </Typography>
-        </Box>
+        </Box> */}
 
-        {/* Buttons - Only show for inventory tab */}
-        {currentTab === "inventory" && (
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<SendOutlined />}
-              onClick={() => setIssueDialogOpen(true)}
+            <Box
               sx={{
-                textTransform: "none",
-                px: 3,
-                py: 1.2,
-                borderRadius: "10px",
-                borderColor: theme.palette.primary.main,
-                color: theme.palette.primary.main,
-                "&:hover": {
-                  borderColor: theme.palette.primary.dark,
-                  backgroundColor: theme.palette.primary.light + "10",
-                },
+                display: "flex",
+                gap: 2,
+                justifyContent: "end",
               }}
             >
-              Issue Item
-            </Button>
+              <Button
+                variant="outlined"
+                startIcon={<SendOutlined />}
+                onClick={() => setIssueDialogOpen(true)}
+              >
+                Issue Item
+              </Button>
 
-            {/* 🔹 Dropdown Button */}
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={handleMenuClick}
-              sx={{
-                textTransform: "none",
-                px: 3,
-                py: 1.2,
-                borderRadius: "10px",
-              }}
-            >
-              Add Item
-            </Button>
+              <Button
+                variant="contained"
+                endIcon={<KeyboardArrowDownIcon />}
+                onClick={handleMenuClick}
+              >
+                Add Item
+              </Button>
 
-            <Menu anchorEl={anchorEl} open={openMenu} onClose={handleMenuClose}>
-              <MenuItem onClick={() => handleMenuItemClick("Laptop")}>
-                Laptop
-              </MenuItem>
+              <Menu
+                anchorEl={anchorEl}
+                open={openMenu}
+                onClose={handleMenuClose}
+              >
+                <MenuItem onClick={() => handleMenuItemClick("Laptop")}>
+                  Laptop
+                </MenuItem>
 
-              <MenuItem onClick={() => handleMenuItemClick("Mouse")}>
-                Mouse
-              </MenuItem>
+                <MenuItem onClick={() => handleMenuItemClick("Mouse")}>
+                  Mouse
+                </MenuItem>
 
-              <MenuItem onClick={() => handleMenuItemClick("LCD")}>
-                LCD
-              </MenuItem>
+                <MenuItem onClick={() => handleMenuItemClick("LCD")}>
+                  LCD
+                </MenuItem>
 
-              <MenuItem onClick={() => handleMenuItemClick("Handfree")}>
-                Handfree
-              </MenuItem>
-            </Menu>
+                <MenuItem onClick={() => handleMenuItemClick("Handfree")}>
+                  Handfree
+                </MenuItem>
+              </Menu>
+            </Box>
           </Box>
-        )}
-      </Box>
 
-      {/* Tabs */}
-      <Tabs
-        value={currentTab}
-        onChange={(e, newValue) => setCurrentTab(newValue)}
-        sx={{
-          mb: 3,
-          borderBottom: 1,
-          borderColor: "divider",
-        }}
-      >
-        <Tab
-          label="Inventory Items"
-          value="inventory"
-          icon={<Inventory2Outlined />}
-          iconPosition="start"
-          sx={{
-            textTransform: "none",
-            fontSize: "1rem",
-          }}
-        />
-        <Tab
-          label="Issued Assets"
-          value="assets"
-          icon={<SendOutlined />}
-          iconPosition="start"
-          sx={{
-            textTransform: "none",
-            fontSize: "1rem",
-          }}
-        />
-      </Tabs>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              mb: 3,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <TextField
+              size="small"
+              label="Search"
+              placeholder="Search inventory"
+              value={searchText}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                setPage(1);
+              }}
+              sx={{ minWidth: 240 }}
+              InputProps={{
+                startAdornment: (
+                  <Search
+                    fontSize="small"
+                    sx={{ mr: 1, color: "text.secondary" }}
+                  />
+                ),
+              }}
+            />
 
-      {/* Conditional Rendering */}
-      {currentTab === "inventory" ? (
-        <InventoryTable
-          inventory={data || []}
-          isLoading={isLoading}
-          isError={isError}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      ) : (
-        <AssetsManagement />
+            <TextField
+              select
+              size="small"
+              label="Category"
+              value={categoryFilter}
+              onChange={(e) => {
+                setCategoryFilter(e.target.value);
+                setPage(1);
+              }}
+              sx={{ minWidth: 170 }}
+            >
+              <MenuItem value="">All Categories</MenuItem>
+              {CATEGORY_OPTIONS.map((category) => (
+                <MenuItem key={category} value={category}>
+                  {formatText(category)}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              size="small"
+              label="Status"
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              sx={{ minWidth: 170 }}
+            >
+              <MenuItem value="">All Statuses</MenuItem>
+              {STATUS_OPTIONS.map((status) => (
+                <MenuItem key={status} value={status}>
+                  {formatText(status)}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+
+          <InventoryTable
+            inventory={data?.assets || []}
+            isLoading={isLoading}
+            isError={isError}
+            page={data?.page || page}
+            totalPages={data?.total_pages || 1}
+            totalItems={data?.total || 0}
+            hasNext={data?.has_next || false}
+            hasPrev={data?.has_prev || false}
+            onPageChange={setPage}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+
+          {/* Dialogs */}
+          <AddInventoryDialog
+            open={addDialogOpen}
+            category={selectedCategory}
+            onClose={() => setAddDialogOpen(false)}
+          />
+
+          <EditInventoryDialog
+            open={editDialogOpen}
+            item={selectedItem}
+            onClose={() => {
+              setEditDialogOpen(false);
+              setSelectedItem(null);
+            }}
+          />
+
+          <DeleteConfirmDialog
+            open={deleteDialogOpen}
+            item={selectedItem}
+            onClose={() => {
+              setDeleteDialogOpen(false);
+              setSelectedItem(null);
+            }}
+          />
+
+          <IssueInventoryDialog
+            open={issueDialogOpen}
+            onClose={() => setIssueDialogOpen(false)}
+          />
+        </>
       )}
-
-      {/* Dialogs */}
-      <AddInventoryDialog
-        open={addDialogOpen}
-        category={selectedCategory} 
-        onClose={() => setAddDialogOpen(false)}
-      />
-
-      <EditInventoryDialog
-        open={editDialogOpen}
-        item={selectedItem}
-        onClose={() => {
-          setEditDialogOpen(false);
-          setSelectedItem(null);
-        }}
-      />
-
-      <DeleteConfirmDialog
-        open={deleteDialogOpen}
-        item={selectedItem}
-        onClose={() => {
-          setDeleteDialogOpen(false);
-          setSelectedItem(null);
-        }}
-      />
-
-      <IssueInventoryDialog
-        open={issueDialogOpen}
-        onClose={() => setIssueDialogOpen(false)}
-      />
-    </Box>
+    </Paper>
   );
 }

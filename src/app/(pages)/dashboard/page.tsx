@@ -7,6 +7,8 @@ import {
   Typography,
   useTheme,
   CircularProgress,
+  Grid,
+  Stack,
 } from "@mui/material";
 import {
   Assignment,
@@ -17,6 +19,12 @@ import {
 import { getUserData } from "@/utils/auth";
 import { useGetEmployeeStatsQuery } from "@/redux/services/stats/stats";
 import WorkflowSteps from "@/views/workflows/WorkflowSteps";
+import {
+  AcceptIcon,
+  CreatedIcon,
+  RejectIcon,
+  WaitingIcon,
+} from "@/assets/icons";
 
 export default function DashboardPage() {
   const theme = useTheme();
@@ -25,9 +33,11 @@ export default function DashboardPage() {
   const { userId, role } = getUserData();
 
   // Fetch employee stats only if employeeId exists
-  const { data: statsData, isLoading, isError } = useGetEmployeeStatsQuery(
-    userId ? userId.toString() : ""
-  );
+  const {
+    data: statsData,
+    isLoading,
+    isError,
+  } = useGetEmployeeStatsQuery(userId ? userId.toString() : "");
 
   console.log("Dashboard Stats Data:", statsData);
 
@@ -51,19 +61,19 @@ export default function DashboardPage() {
           title: "Total Created",
           value: statsData.tickets.total_created || 0,
           colorKey: "primary",
-          icon: Assignment,
+          icon: CreatedIcon,
         },
         {
           title: "Approved",
           value: statsData.tickets.by_status?.APPROVED || 0,
           colorKey: "success",
-          icon: CheckCircle,
+          icon: AcceptIcon,
         },
         {
           title: "Rejected",
           value: statsData.tickets.by_status?.REJECTED || 0,
           colorKey: "error",
-          icon: Cancel,
+          icon: RejectIcon,
         },
         {
           title: "In Progress",
@@ -73,7 +83,7 @@ export default function DashboardPage() {
                 .reduce((acc, k) => acc + statsData.tickets.by_status[k], 0)
             : 0,
           colorKey: "warning",
-          icon: HourglassTop,
+          icon: WaitingIcon,
         },
       ]
     : [];
@@ -113,9 +123,9 @@ export default function DashboardPage() {
   const workflow = JSON.parse(localStorage.getItem("workflow") || "{}");
 
   return (
-    <Box sx={{ width: "100%", height: "100%" }}>
+    <Stack spacing={2}>
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
+      <Box>
         <Typography
           variant="h4"
           sx={{
@@ -139,69 +149,63 @@ export default function DashboardPage() {
       </Box>
 
       {/* Stats Cards */}
-      <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", mb: 4 }}>
+      <Grid container spacing={2}>
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           const color = getColor(stat.colorKey);
 
           return (
-            <Paper
-              key={index}
-              elevation={0}
-              sx={{
-                flex: "1 1 calc(25% - 24px)",
-                minWidth: "220px",
-                p: 3,
-                borderRadius: "16px",
-                border: `1px solid ${theme.palette.divider}`,
-                backgroundColor: theme.palette.background.paper,
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  transform: "translateY(-4px)",
-                  boxShadow: "0 8px 20px rgba(0, 0, 0, 0.08)",
-                },
-              }}
-            >
-              <Box
+            <Grid key={index} size={{ xs: 12, sm: 6, lg: 3 }}>
+              <Paper
+                elevation={0}
                 sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: "14px",
-                  backgroundColor: `${color}15`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  mb: 3,
+                  p: 3,
+                  borderRadius: "16px",
+                  border: `1px solid ${theme.palette.divider}`,
+                  backgroundColor: theme.palette.background.paper,
                 }}
               >
-                <Icon sx={{ color: color, fontSize: 28 }} />
-              </Box>
+                <Box
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "14px",
+                    backgroundColor: `${color}15`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mb: 3,
+                  }}
+                >
+                  <Icon />
+                </Box>
 
-              <Typography
-                variant="h3"
-                sx={{
-                  fontWeight: 700,
-                  color: theme.palette.text.primary,
-                  mb: 1,
-                  fontSize: "2rem",
-                }}
-              >
-                {stat.value}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: theme.palette.text.secondary,
-                  fontWeight: 500,
-                  fontSize: "0.95rem",
-                }}
-              >
-                {stat.title}
-              </Typography>
-            </Paper>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: 700,
+                    color: theme.palette.text.primary,
+                    mb: 1,
+                    fontSize: "2rem",
+                  }}
+                >
+                  {stat.value}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: theme.palette.text.secondary,
+                    fontWeight: 500,
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  {stat.title}
+                </Typography>
+              </Paper>
+            </Grid>
           );
         })}
-      </Box>
+      </Grid>
 
       {/* Bottom Section */}
       <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
@@ -248,14 +252,16 @@ export default function DashboardPage() {
           </Box>
         </Paper>
 
-      <WorkflowSteps
-  steps={workflow?.steps?.map((step: any) => ({
-    ...step,
-    assigned_to: step.assigned_user_name, // replace with actual assigned user if available
-    status: step.status, // if you have status per step
-  })) || []}
-/>
-         
+        <WorkflowSteps
+          steps={
+            workflow?.steps?.map((step: any) => ({
+              ...step,
+              assigned_to: step.assigned_user_name, // replace with actual assigned user if available
+              status: step.status, // if you have status per step
+            })) || []
+          }
+        />
+
         {/* Quick Stats */}
         <Paper
           elevation={0}
@@ -328,6 +334,6 @@ export default function DashboardPage() {
           </Box>
         </Paper>
       </Box>
-    </Box>
+    </Stack>
   );
 }

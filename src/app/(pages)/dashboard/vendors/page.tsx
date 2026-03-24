@@ -59,7 +59,7 @@ export default function VendorsPage() {
       handleClose();
     } catch (err: any) {
       toast.error(
-        err?.data?.error || err?.data?.message || "Failed to add vendor"
+        err?.data?.error || err?.data?.message || "Failed to add vendor",
       );
     }
   };
@@ -73,29 +73,23 @@ export default function VendorsPage() {
         >
           Vendors
         </Typography>
+
+        <Typography
+          variant="body1"
+          sx={{ color: theme.palette.text.secondary }}
+        >
+          Manage vendor records for inventory sourcing.
+        </Typography>
         <Button
           variant="contained"
-          sx={{ alignSelf: "flex-start" }}
+          sx={{ alignSelf: "flex-end" }}
           onClick={handleOpen}
         >
           Add Vendor
         </Button>
-        <Typography variant="body1" sx={{ color: theme.palette.text.secondary }}>
-          Manage vendor records for inventory sourcing.
-        </Typography>
       </Box>
 
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          borderRadius: "16px",
-          border: `1px solid ${theme.palette.divider}`,
-          backgroundColor: theme.palette.background.paper,
-        }}
-      >
-        <VendorsTable />
-      </Paper>
+      <VendorsTable />
 
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
         <DialogTitle>Add Vendor</DialogTitle>
@@ -168,4 +162,3 @@ export default function VendorsPage() {
     </Box>
   );
 }
-

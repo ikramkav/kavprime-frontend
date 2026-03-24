@@ -1,4 +1,5 @@
 import { baseApi } from "../../baseApi";
+import type { UserRole } from "@/utils/auth";
 
 // Types for requests and responses
 export interface LoginRequest {
@@ -9,17 +10,23 @@ export interface LoginRequest {
 export interface LoginResponse {
   message: string;
   user_id: number;
-  role: "ADMIN" | "EMPLOYEE" | "PMO" | "SENIOR_PMO" | "FINANCE";
+  role: UserRole;
   redirect_url: string;
-  employment_status: string; 
+  employment_status: string;
   workflow?: Workflow;
+  tokens?: {
+    access: string;
+    refresh: string;
+    token_type: string;
+    expires_in: string;
+  };
 }
 
 export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
-  role?: "ADMIN" | "EMPLOYEE" | "PMO" | "SENIOR_PMO" | "FINANCE";
+  role?: UserRole;
   designation?: string;
   employment_status?: string;
   join_date?: string;
@@ -28,13 +35,13 @@ export interface RegisterRequest {
 export interface RegisterResponse {
   message: string;
   id: number;
-  role: "ADMIN" | "EMPLOYEE" | "PMO" | "SENIOR_PMO" | "FINANCE";
+  role: UserRole;
 }
 
 export interface UpdateUserRequest {
   id: number;
   name?: string;
-  role?: "ADMIN" | "EMPLOYEE" | "PMO" | "SENIOR_PMO" | "FINANCE";
+  role?: UserRole;
   designation?: string;
   employment_status?: string;
   join_date?: string;
@@ -45,7 +52,7 @@ export interface UpdateUserResponse {
   user_id: number;
   name: string;
   email: string;
-  role: "ADMIN" | "EMPLOYEE" | "PMO" | "SENIOR_PMO" | "FINANCE";
+  role: UserRole;
   employment_status: string;
   designation: string;
 }
@@ -70,7 +77,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: "ADMIN" | "EMPLOYEE" | "PMO" | "SENIOR_PMO" | "FINANCE";
+  role: UserRole;
   designation?: string;
   employment_status?:string;
   join_date?: string;

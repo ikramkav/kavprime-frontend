@@ -55,8 +55,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
   const handleLogout = () => {
     clearUserData();
-    toast.success("Logged out successfully!");
-    router.push("/auth/login");
+    toast.success("Logged out successfully");
+    router.replace("/auth/login");
     handleMenuClose();
   };
 
@@ -67,14 +67,14 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const getPageTitle = () => {
     // Find matching navigation item
     const currentItem = navigationItems.find((item) => item.path === pathname);
-    
+
     if (currentItem) {
       return currentItem.title;
     }
 
     // If no exact match, try to find partial match (for nested routes)
-    const partialMatch = navigationItems.find((item) => 
-      pathname.startsWith(item.path) && item.path !== "/dashboard"
+    const partialMatch = navigationItems.find(
+      (item) => pathname.startsWith(item.path) && item.path !== "/dashboard",
     );
 
     if (partialMatch) {
@@ -93,21 +93,30 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
     // If not on dashboard, add current page
     if (pathname !== "/dashboard") {
-      const currentItem = navigationItems.find((item) => item.path === pathname);
-      
+      const currentItem = navigationItems.find(
+        (item) => item.path === pathname,
+      );
+
       if (currentItem) {
         breadcrumbs.push({ label: currentItem.title, path: currentItem.path });
       } else {
         // For nested routes that don't have exact match
-        const partialMatch = navigationItems.find((item) => 
-          pathname.startsWith(item.path) && item.path !== "/dashboard"
+        const partialMatch = navigationItems.find(
+          (item) =>
+            pathname.startsWith(item.path) && item.path !== "/dashboard",
         );
 
         if (partialMatch) {
-          breadcrumbs.push({ label: partialMatch.title, path: partialMatch.path });
-          
+          breadcrumbs.push({
+            label: partialMatch.title,
+            path: partialMatch.path,
+          });
+
           // Add the nested page name if it exists
-          const nestedPart = pathname.replace(partialMatch.path, "").split("/").filter(Boolean)[0];
+          const nestedPart = pathname
+            .replace(partialMatch.path, "")
+            .split("/")
+            .filter(Boolean)[0];
           if (nestedPart) {
             const nestedLabel = nestedPart
               .split("-")
@@ -117,13 +126,14 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           }
         } else {
           // Fallback: create breadcrumb from URL
-          const label = pathname
-            .split("/")
-            .filter(Boolean)
-            .pop()
-            ?.split("-")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ") || "Page";
+          const label =
+            pathname
+              .split("/")
+              .filter(Boolean)
+              .pop()
+              ?.split("-")
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(" ") || "Page";
           breadcrumbs.push({ label, path: pathname });
         }
       }

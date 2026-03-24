@@ -43,7 +43,7 @@ export default function AddInventoryDialog({
     model_name: "",
     total_quantity: "",
     available_quantity: "",
-    issued_quantity: "",
+    quantity_issued: "",
     minimum_stock_level: "",
     purchase_date: "",
     purchase_price: "",
@@ -168,7 +168,7 @@ export default function AddInventoryDialog({
       <TextField
         fullWidth
         label="Issued Quantity"
-        name="issued_quantity"
+        name="quantity_issued"
         type="number"
         onChange={handleChange}
       />

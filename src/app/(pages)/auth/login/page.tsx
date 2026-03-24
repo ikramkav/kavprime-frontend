@@ -397,7 +397,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   TextField,
@@ -412,17 +412,17 @@ import {
   FormControlLabel,
 } from "@mui/material";
 import { Visibility, VisibilityOff, Email, Lock } from "@mui/icons-material";
-import { useThemeMode } from "@/theme/themeProvider";
 import { useLoginMutation } from "@/redux/services/auth/authApi";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import { isAuthenticated, saveAuthData } from "@/utils/auth";
+import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import type { SerializedError } from "@reduxjs/toolkit";
 
 export default function LoginPage() {
   const theme = useTheme();
   const router = useRouter();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const { mode } = useThemeMode();
-
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
@@ -431,6 +431,12 @@ export default function LoginPage() {
   });
 
   const [login, { isLoading }] = useLoginMutation();
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
 
   const handleClickShowPassword = () => setShowPassword(!showPassword);
 
@@ -447,30 +453,34 @@ export default function LoginPage() {
     try {
       const result = await login(formData).unwrap();
 
-      localStorage.setItem("user_id", result.user_id.toString());
-      localStorage.setItem("role", result.role);
-      localStorage.setItem("employment_status", result.employment_status);
-
-      if (result.workflow) {
-        localStorage.setItem("workflow", JSON.stringify(result.workflow));
-        localStorage.setItem(
-          "workflow_steps",
-          JSON.stringify(result.workflow.steps),
-        );
-      }
+      saveAuthData({
+        userId: result.user_id,
+        role: result.role,
+        employmentStatus: result.employment_status,
+        workflow: result.workflow,
+        tokens: result.tokens,
+      });
 
       toast.success(result.message || "Login successful!");
 
+      const nextRoute = result.redirect_url?.startsWith("/dashboard")
+        ? result.redirect_url
+        : "/dashboard";
+
       setTimeout(() => {
-        router.push("/dashboard");
+        router.replace(nextRoute);
       }, 1000);
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as FetchBaseQueryError | SerializedError;
+      const apiError =
+        "data" in err && err.data && typeof err.data === "object"
+          ? (err.data as { error?: string; message?: string })
+          : null;
+
       toast.error(
-        err?.data?.error ||
-          err?.data?.message ||
-          "Login failed. Please try again.",
+        apiError?.error || apiError?.message || "Login failed. Please try again.",
       );
-      console.error("Login failed:", err);
+      console.error("Login failed:", error);
     }
   };
 
@@ -514,7 +524,7 @@ export default function LoginPage() {
             {/* Image */}
             <Box
               component="img"
-              src="/images/loginleftimage.png" 
+              src="/images/loginleftimage.png"
               alt="Login Illustration"
               sx={{
                 width: "100%",
@@ -522,7 +532,7 @@ export default function LoginPage() {
                 height: "auto",
                 objectFit: "contain",
               }}
-            /> 
+            />
           </Box>
         )}
 
@@ -559,11 +569,11 @@ export default function LoginPage() {
           </IconButton>
 
           {/* Logo */}
-          <Box sx={{ mb: 3 }}> 
-              {/* K icon */}
-             <Box
+          <Box sx={{ mb: 3 }}>
+            {/* K icon */}
+            <Box
               component="img"
-              src="/images/kavprimelogo.png" 
+              src="/images/kavprimelogo.png"
               alt="Login Illustration"
               sx={{
                 width: "100%",
@@ -571,7 +581,7 @@ export default function LoginPage() {
                 height: "auto",
                 objectFit: "contain",
               }}
-            />   
+            />
           </Box>
 
           {/* Heading */}
@@ -810,7 +820,6 @@ export default function LoginPage() {
       >
         © 2025 Kavprime. All rights reserved.
       </Typography>
-
     </Box>
   );
 }

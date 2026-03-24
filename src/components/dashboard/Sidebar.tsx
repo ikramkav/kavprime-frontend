@@ -151,7 +151,7 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 <ListItemText
                   primary={item.title}
                   primaryTypographyProps={{
-                    fontSize: "0.9rem",
+                    fontSize: 14,
                     fontWeight: isActive ? 600 : 500,
                   }}
                 />
