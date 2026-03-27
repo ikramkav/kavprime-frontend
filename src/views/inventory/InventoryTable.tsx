@@ -22,6 +22,7 @@ import {
   Stack,
   Tooltip,
   Pagination,
+  Button,
 } from "@mui/material";
 import {
   Edit,
@@ -29,6 +30,7 @@ import {
   Inventory2,
   Person,
   Visibility,
+  Download,
 } from "@mui/icons-material";
 import { BASE_URL } from "@/redux/baseApi";
 
@@ -51,6 +53,7 @@ export interface InventoryItem {
   assigned_to_id?: number | null;
   attachment?: string | null;
   barcode_qr_code?: string | null;
+  qr_code_path?: string | null;
 }
 
 interface InventoryTableProps {
@@ -362,33 +365,85 @@ export default function InventoryTable({
           {selectedItem?.asset_tag || selectedItem?.item_code || "-"}
         </Typography>
 
-        {selectedItem?.barcode_qr_code && (
-          <Box
-            sx={{
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: 2,
-              p: 2,
-              mb: 2,
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
+        {/* QR Code Section */}
+        {(() => {
+          const qrPath =
+            selectedItem?.qr_code_path ||
+            selectedItem?.barcode_qr_code ||
+            (selectedItem?.asset_tag
+              ? `qr_codes/${selectedItem.asset_tag}_qr.png`
+              : null);
+          if (!qrPath) return null;
+          const qrSrc = resolveQrSrc(
+            `${BASE_URL.replace("/api", "")}/media/${qrPath}`
+          );
+          return (
             <Box
-              component="img"
-              src={resolveQrSrc(
-                `${BASE_URL.replace("/api", "")}/media/${selectedItem.barcode_qr_code}`,
-              )}
-              alt="QR code"
-              sx={{ width: 200, maxWidth: "100%", borderRadius: 1 }}
-            />
-          </Box>
-        )}
+              sx={{
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 2,
+                p: 2,
+                mb: 2,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1.5,
+              }}
+            >
+              <Box
+                component="img"
+                src={qrSrc}
+                alt="QR code"
+                sx={{ width: 180, maxWidth: "100%", borderRadius: 1 }}
+                onError={(e: any) => {
+                  e.currentTarget.parentElement.style.display = "none";
+                }}
+              />
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<Download fontSize="small" />}
+                href={qrSrc}
+                download={`${selectedItem?.asset_tag || "qr_code"}.png`}
+                target="_blank"
+                sx={{
+                  borderRadius: "8px",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: "0.8rem",
+                  backgroundColor: "#1a1a2e",
+                  "&:hover": { backgroundColor: "#16213e" },
+                }}
+              >
+                Download QR Code
+              </Button>
+            </Box>
+          );
+        })()}
 
         <Divider sx={{ mb: 1.5 }} />
 
+        {/* Asset Details Label */}
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 700,
+            color: "text.secondary",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            fontSize: "0.7rem",
+            mb: 1,
+            display: "block",
+          }}
+        >
+          Asset Details
+        </Typography>
+
         <Stack spacing={1.25}>
           {selectedItem &&
-            Object.entries(selectedItem).map(([key, value]) => (
+            Object.entries(selectedItem)
+              .filter(([key]) => !["qr_code_path", "barcode_qr_code"].includes(key))
+              .map(([key, value]) => (
               <Box
                 key={key}
                 sx={{

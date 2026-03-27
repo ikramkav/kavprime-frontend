@@ -98,6 +98,7 @@ export interface InventoryItem {
   vendor_name?: string;
   assigned_to_id?: number | null;
   barcode_qr_code?: string | null;
+  qr_code_path?: string | null;
   created_at?: string;
   updated_at?: string;
   attachment_url?: string | null;
@@ -290,6 +291,24 @@ export interface AddVendorRequest {
 export interface AddVendorResponse {
   message?: string;
   id?: number;
+}
+
+export interface UpdateVendorRequest {
+  id: number;
+  name?: string;
+  address?: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  gst_number?: string;
+}
+
+export interface UpdateVendorResponse {
+  message?: string;
+}
+
+export interface DeleteVendorResponse {
+  message?: string;
 }
 
 export interface Vendor {
@@ -498,6 +517,28 @@ export const inventoryApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Inventory"],
     }),
+
+    // Delete vendor endpoint
+    deleteVendor: builder.mutation<DeleteVendorResponse, number>({
+      query: (id) => ({
+        url: `/inventory/vendors/${id}/delete/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Inventory"],
+    }),
+
+    // Update vendor endpoint
+    updateVendor: builder.mutation<UpdateVendorResponse, UpdateVendorRequest>({
+      query: ({ id, ...body }) => ({
+        url: `/inventory/vendors/${id}/edit/`,
+        method: "PUT",
+        body,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
+      invalidatesTags: ["Inventory"],
+    }),
   }),
 });
 
@@ -516,4 +557,6 @@ export const {
   useGetAssetDetailQuery,
   useGetVendorsQuery,
   useAddVendorMutation,
+  useUpdateVendorMutation,
+  useDeleteVendorMutation,
 } = inventoryApi;
