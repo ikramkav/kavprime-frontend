@@ -23,7 +23,9 @@ import {
 } from "@mui/icons-material";
 import { getUserData } from "@/utils/auth";
 import { useGetEmployeeStatsQuery } from "@/redux/services/stats/stats";
+import { useGetTicketsListQuery } from "@/redux/services/tickets/ticketsApi";
 import { useRouter } from "next/navigation";
+import { Chip } from "@mui/material";
 import {
   AcceptIcon,
   CreatedIcon,
@@ -34,11 +36,24 @@ import {
 export default function DashboardPage() {
   const theme = useTheme();
   const router = useRouter();
-  const { userId } = getUserData();
+  const { userId, role } = getUserData();
+  const isAdmin = role === "ADMIN";
 
   const { data: statsData, isLoading, isError } = useGetEmployeeStatsQuery(
     userId ? userId.toString() : ""
   );
+
+  const { data: myTickets = [] } = useGetTicketsListQuery(
+    userId ? userId.toString() : "",
+    { skip: !userId || isAdmin }
+  );
+
+  const recentTickets = Array.isArray(myTickets)
+    ? [...myTickets]
+        .filter((t: any) => t.employee_id === userId || t.employee_id === Number(userId))
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5)
+    : [];
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -60,7 +75,7 @@ export default function DashboardPage() {
         },
         {
           title: "Approved",
-          value: statsData.tickets.by_status?.APPROVED || 0,
+          value: (statsData.tickets.by_status?.APPROVED || 0) + (statsData.tickets.by_status?.COMPLETED || 0),
           color: theme.palette.success.main,
           bg: "#ECFDF5",
           icon: AcceptIcon,
@@ -268,8 +283,8 @@ export default function DashboardPage() {
 
       {/* Bottom Section */}
       <Grid container spacing={2}>
-        {/* Quick Actions */}
-        <Grid size={{ xs: 12, md: 5 }}>
+        {/* Quick Actions - Admin only */}
+        {isAdmin && <Grid size={{ xs: 12, md: 5 }}>
           <Paper
             elevation={0}
             sx={{
@@ -332,10 +347,101 @@ export default function DashboardPage() {
               })}
             </Stack>
           </Paper>
-        </Grid>
+        </Grid>}
 
-        {/* Recent Activity */}
-        <Grid size={{ xs: 12, md: 7 }}>
+        {/* My Recent Tickets - Non-admin only */}
+        {!isAdmin && (
+          <Grid size={{ xs: 12 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: "16px",
+                border: `1px solid ${theme.palette.divider}`,
+                backgroundColor: theme.palette.background.paper,
+              }}
+            >
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "1.05rem" }}>
+                  My Recent Tickets
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: theme.palette.primary.main, cursor: "pointer", fontWeight: 500 }}
+                  onClick={() => router.push("/dashboard/tickets")}
+                >
+                  View All
+                </Typography>
+              </Box>
+
+              {recentTickets.length === 0 ? (
+                <Box sx={{ textAlign: "center", py: 4 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No tickets created yet. Click "View All" to create your first ticket.
+                  </Typography>
+                </Box>
+              ) : (
+                <Stack spacing={1.5}>
+                  {recentTickets.map((ticket) => {
+                    const statusColors: Record<string, { bg: string; color: string }> = {
+                      APPROVED: { bg: "#ECFDF5", color: "#059669" },
+                      REJECTED: { bg: "#FEF2F2", color: "#DC2626" },
+                      PENDING: { bg: "#FFFBEB", color: "#D97706" },
+                      INPROGRESS: { bg: "#EEF2FF", color: "#4F46E5" },
+                    };
+                    const statusKey = Object.keys(statusColors).find((k) =>
+                      ticket.status?.toUpperCase().includes(k)
+                    ) || "PENDING";
+                    const statusStyle = statusColors[statusKey] || { bg: "#F3F4F6", color: "#6B7280" };
+
+                    return (
+                      <Box
+                        key={ticket.id}
+                        onClick={() => router.push("/dashboard/tickets")}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          p: 2,
+                          borderRadius: "10px",
+                          border: `1px solid ${theme.palette.divider}`,
+                          cursor: "pointer",
+                          "&:hover": { backgroundColor: theme.palette.action.hover },
+                          transition: "background-color 0.2s",
+                        }}
+                      >
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="body2" fontWeight={600} noWrap>
+                            {ticket.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            #{ticket.id} · {ticket.ticket_type} ·{" "}
+                            {new Date(ticket.created_at).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={ticket.status}
+                          size="small"
+                          sx={{
+                            backgroundColor: statusStyle.bg,
+                            color: statusStyle.color,
+                            fontWeight: 600,
+                            fontSize: "0.7rem",
+                            flexShrink: 0,
+                            ml: 2,
+                          }}
+                        />
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              )}
+            </Paper>
+          </Grid>
+        )}
+
+        {/* Recent Activity - Admin only */}
+        {isAdmin && <Grid size={{ xs: 12, md: 7 }}>
           <Paper
             elevation={0}
             sx={{
@@ -399,7 +505,7 @@ export default function DashboardPage() {
               })}
             </Stack>
           </Paper>
-        </Grid>
+        </Grid>}
       </Grid>
     </Stack>
   );

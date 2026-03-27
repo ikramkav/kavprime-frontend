@@ -90,9 +90,12 @@ const ViewAssets = () => {
     }
   };
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  // Format date - handles undefined/null/invalid values
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -338,14 +341,19 @@ const ViewAssets = () => {
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <CalendarToday 
-                      sx={{ 
-                        fontSize: 16, 
-                        color: theme.palette.mode === "dark" ? "primary.main" : "text.secondary" 
-                      }} 
+                    <CalendarToday
+                      sx={{
+                        fontSize: 16,
+                        color: theme.palette.mode === "dark" ? "primary.main" : "text.secondary"
+                      }}
                     />
                     <Typography variant="body2" color="text.primary">
-                      {formatDate(asset.quantity_issued_date)}
+                      {formatDate(
+                        asset.quantity_issued_date ||
+                        (asset as any).issue_date ||
+                        (asset as any).issued_date ||
+                        (asset as any).created_at
+                      )}
                     </Typography>
                   </Box>
                 </TableCell>
@@ -370,7 +378,10 @@ const ViewAssets = () => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" color="text.primary">
-                    {asset.issued_by_name}
+                    {asset.issued_by_name ||
+                      (asset as any).issued_by?.name ||
+                      (asset as any).issued_by ||
+                      (asset.issued_by_id ? `ID: ${asset.issued_by_id}` : "-")}
                   </Typography>
                 </TableCell>
                 <TableCell align="center">

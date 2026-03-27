@@ -78,8 +78,20 @@ export default function TicketManagement() {
   if (isLoading) return <p>Loading...</p>;
   if (isError) return <p>Something went wrong</p>;
 
-  // 🔹 Sort tickets (keeping your logic)
-  const sortedTickets = [...tickets].sort(
+  // Handle both array response and object response { tickets: [...] }
+  const rawTicketsArray = Array.isArray(tickets)
+    ? tickets
+    : Array.isArray((tickets as any)?.tickets)
+    ? (tickets as any).tickets
+    : Array.isArray((tickets as any)?.data)
+    ? (tickets as any).data
+    : [];
+
+  // Always filter to only show tickets created by the logged-in user
+  const ticketsArray = rawTicketsArray.filter(
+    (t: any) => t.employee_id === Number(employeeId)
+  );
+  const sortedTickets = [...ticketsArray].sort(
     (a, b) =>
       new Date(b.created_at).getTime() -
       new Date(a.created_at).getTime()
@@ -87,7 +99,7 @@ export default function TicketManagement() {
 
   // 🔹 Assigned Tickets (adjust field if needed)
   const assignedTickets = sortedTickets.filter(
-    (ticket) => ticket.assigned_to === Number(userId)
+    (ticket: any) => ticket.assigned_to === Number(userId)
   );
 
   return (

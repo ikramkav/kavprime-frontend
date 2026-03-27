@@ -103,6 +103,7 @@ export interface AssignedTicket {
   workflow_id: number | null;
   assigned_to: AssignedUser;
   employee: EmployeeInfo;
+  priority?: "CRITICAL" | "NON_CRITICAL" | string | null;
 }
 
 export interface GetAssignedTicketsResponse {
@@ -141,19 +142,32 @@ export const ticketsApi = baseApi.injectEndpoints({
           employee_id: employeeId,
         },
       }),
-      providesTags: ["Tickets"],
-    }),
-    getAssignedTickets: builder.query<GetAssignedTicketsResponse, number>({
-      query: (userId) => ({
-        url: `/tickets/dashboard/${userId}/`,
-        method: "GET",
-      }),
+      transformResponse: (response: any) => {
+        // Handle both array response [] and object response { tickets: [] }
+        if (Array.isArray(response)) return response;
+        if (Array.isArray(response?.tickets)) return response.tickets;
+        if (Array.isArray(response?.data)) return response.data;
+        return [];
+      },
       providesTags: ["Tickets"],
     }),
 
     getAllTickets: builder.query<GetTicketsListResponse, void>({
       query: () => ({
         url: "/tickets/list/all/",
+        method: "GET",
+      }),
+      transformResponse: (response: any) => {
+        if (Array.isArray(response)) return response;
+        if (Array.isArray(response?.tickets)) return response.tickets;
+        if (Array.isArray(response?.data)) return response.data;
+        return [];
+      },
+      providesTags: ["Tickets"],
+    }),
+    getAssignedTickets: builder.query<GetAssignedTicketsResponse, number>({
+      query: (userId) => ({
+        url: `/tickets/dashboard/${userId}/`,
         method: "GET",
       }),
       providesTags: ["Tickets"],
