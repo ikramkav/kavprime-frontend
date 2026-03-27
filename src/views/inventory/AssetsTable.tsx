@@ -1,17 +1,15 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Box,
   Button,
-  Checkbox,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  Divider,
+  Drawer,
   IconButton,
+  MenuItem,
   Pagination,
   Paper,
   Stack,
@@ -24,13 +22,12 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { AssignmentReturn, Visibility } from "@mui/icons-material";
 import {
   AssetDetail,
-  IssuedAssetAssignment,
-  useGetIssuedAssetsWithAssignmentsQuery,
   useReturnAssetMutation,
 } from "@/redux/services/inventory/inventoryApi";
 import { EllipsesText } from "@/components/common/EllipsesText";
@@ -62,120 +59,53 @@ export default function AssetsTable({
   onViewDetail,
 }: AssetsTableProps) {
   const theme = useTheme();
-  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
-  const [selectedAssetRow, setSelectedAssetRow] = useState<AssetDetail | null>(
-    null
-  );
-  const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<number[]>(
-    []
-  );
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("md"));
+  const [returnDrawerOpen, setReturnDrawerOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<AssetDetail | null>(null);
+  const [returnStatus, setReturnStatus] = useState<"RETURNED" | "DAMAGED">("RETURNED");
   const [remarks, setRemarks] = useState("");
-
-  const {
-    data: issuedAssetsData,
-    isLoading: isAssignmentsLoading,
-    isError: isAssignmentsError,
-  } = useGetIssuedAssetsWithAssignmentsQuery(
-      {
-        page: 1,
-        limit: 10,
-        issued: true,
-        status: "ISSUED",
-        asset_id: selectedAssetRow?.asset_id,
-        search: selectedAssetRow?.asset_id
-          ? undefined
-          : selectedAssetRow?.asset_tag,
-      },
-      {
-        skip: !returnDialogOpen || !selectedAssetRow,
-      }
-    );
 
   const [returnAsset, { isLoading: isReturning }] = useReturnAssetMutation();
 
-  const assignments: IssuedAssetAssignment[] = useMemo(() => {
-    if (!issuedAssetsData?.assets?.length || !selectedAssetRow) {
-      return [];
-    }
-
-    const exactById = selectedAssetRow.asset_id
-      ? issuedAssetsData.assets.find(
-          (asset) => asset.asset_id === selectedAssetRow.asset_id
-        )
-      : undefined;
-
-    const exactByTag = issuedAssetsData.assets.find(
-      (asset) => asset.asset_tag === selectedAssetRow.asset_tag
-    );
-
-    return (exactById || exactByTag || issuedAssetsData.assets[0])?.assignments || [];
-  }, [issuedAssetsData, selectedAssetRow]);
-
-  const issuedAssignments = assignments.filter(
-    (assignment) => assignment.status === "ISSUED"
-  );
-
-  const allIssuedSelected =
-    issuedAssignments.length > 0 &&
-    issuedAssignments.every((assignment) =>
-      selectedAssignmentIds.includes(assignment.issue_record_id)
-    );
-
-  const someIssuedSelected =
-    selectedAssignmentIds.length > 0 && !allIssuedSelected;
-
-  const handleOpenReturnDialog = (asset: AssetDetail) => {
-    setSelectedAssetRow(asset);
-    setSelectedAssignmentIds([]);
+  const handleOpenReturnDrawer = (asset: AssetDetail) => {
+    setSelectedAsset(asset);
+    setReturnStatus("RETURNED");
     setRemarks("");
-    setReturnDialogOpen(true);
+    setReturnDrawerOpen(true);
   };
 
-  const handleCloseReturnDialog = () => {
-    setReturnDialogOpen(false);
-    setSelectedAssetRow(null);
-    setSelectedAssignmentIds([]);
+  const handleCloseReturnDrawer = () => {
+    setReturnDrawerOpen(false);
+    setSelectedAsset(null);
+    setReturnStatus("RETURNED");
     setRemarks("");
   };
 
-  const toggleAssignment = (issueRecordId: number) => {
-    setSelectedAssignmentIds((prev) =>
-      prev.includes(issueRecordId)
-        ? prev.filter((id) => id !== issueRecordId)
-        : [...prev, issueRecordId]
-    );
-  };
-
-  const handleToggleSelectAll = () => {
-    if (allIssuedSelected) {
-      setSelectedAssignmentIds([]);
-      return;
-    }
-    setSelectedAssignmentIds(
-      issuedAssignments.map((assignment) => assignment.issue_record_id)
-    );
-  };
-
-  const handleReturnAssets = async () => {
-    if (!selectedAssignmentIds.length) {
-      toast.error("Please select at least one issued assignment to return.");
-      return;
-    }
+  const handleReturnAsset = async () => {
+    if (!selectedAsset) return;
 
     try {
       await returnAsset({
-        asset_ids: selectedAssignmentIds,
-        status: "RETURNED",
+        asset_ids: [selectedAsset.id],
+        status: returnStatus,
         remarks: remarks.trim() || undefined,
       }).unwrap();
 
-      toast.success("Selected asset assignments returned successfully.");
-      handleCloseReturnDialog();
+      toast.success(`Asset returned successfully as ${returnStatus}.`);
+      handleCloseReturnDrawer();
     } catch (error) {
       const message =
         (error as { data?: { message?: string } })?.data?.message ||
-        "Failed to return selected assignments.";
+        "Failed to return asset.";
       toast.error(message);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return dateString;
     }
   };
 
@@ -231,11 +161,7 @@ export default function AssetsTable({
       >
         <Table size="small">
           <TableHead>
-            <TableRow
-              sx={{
-                backgroundColor: theme.palette.background.default,
-              }}
-            >
+            <TableRow sx={{ backgroundColor: theme.palette.background.default }}>
               <TableCell sx={{ fontWeight: 600 }}>Asset Tag</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Model</TableCell>
@@ -252,36 +178,24 @@ export default function AssetsTable({
           <TableBody>
             {assets.map((asset) => (
               <TableRow
-                key={asset.record_id}
-                sx={{
-                  "&:hover": {
-                    backgroundColor: theme.palette.action.hover,
-                  },
-                }}
+                key={asset.id}
+                sx={{ "&:hover": { backgroundColor: theme.palette.action.hover } }}
               >
                 <TableCell>
                   <EllipsesText value={asset.asset_tag} />
                 </TableCell>
                 <TableCell>{asset.category || "-"}</TableCell>
                 <TableCell>
-                  <Typography>
-                    <EllipsesText value={asset.model_name} />
-                  </Typography>
+                  <EllipsesText value={asset.model_name} />
                 </TableCell>
                 <TableCell>
-                  <Typography>
-                    <EllipsesText value={asset.brand} />
-                  </Typography>
+                  <EllipsesText value={asset.brand} />
                 </TableCell>
-                <TableCell>
-                  <Typography>{asset.employee_name}</Typography>
-                </TableCell>
+                <TableCell>{asset.employee_name}</TableCell>
                 <TableCell>{asset.quantity_issued}</TableCell>
                 <TableCell>{asset.status || "-"}</TableCell>
                 <TableCell>
-                  {asset.issued_date
-                    ? new Date(asset.issued_date).toLocaleDateString()
-                    : "-"}
+                  {asset.issued_date ? formatDate(asset.issued_date) : "-"}
                 </TableCell>
                 <TableCell align="right">
                   <Stack direction="row" spacing={0.5} justifyContent="flex-end">
@@ -298,7 +212,7 @@ export default function AssetsTable({
                       <Tooltip title="Return Asset">
                         <IconButton
                           size="small"
-                          onClick={() => handleOpenReturnDialog(asset)}
+                          onClick={() => handleOpenReturnDrawer(asset)}
                           sx={{ color: theme.palette.warning.main }}
                         >
                           <AssignmentReturn fontSize="small" />
@@ -346,110 +260,84 @@ export default function AssetsTable({
         </Box>
       )}
 
-      <Dialog
-        open={returnDialogOpen}
-        onClose={handleCloseReturnDialog}
-        fullWidth
-        maxWidth="lg"
+      {/* Return Asset Drawer */}
+      <Drawer
+        anchor="right"
+        open={returnDrawerOpen}
+        onClose={handleCloseReturnDrawer}
+        PaperProps={{
+          sx: {
+            width: { xs: "100%", sm: 420, md: 520 },
+            p: 2.5,
+          },
+        }}
       >
-        <DialogTitle>Return Issued Assignments</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Select one or more issued assignments for
-            {` ${selectedAssetRow?.asset_tag || "this asset"}`}.
-          </Typography>
+        <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>
+          Return Asset
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {selectedAsset?.asset_tag || "-"}
+        </Typography>
 
-          {isAssignmentsLoading ? (
+        <Divider sx={{ mb: 1.5 }} />
+
+        {/* Asset Details */}
+        <Stack spacing={1.25} sx={{ mb: 3 }}>
+          {[
+            { label: "Asset Tag", value: selectedAsset?.asset_tag },
+            { label: "Category", value: selectedAsset?.category },
+            { label: "Model", value: selectedAsset?.model_name },
+            { label: "Brand", value: selectedAsset?.brand },
+            { label: "Employee", value: selectedAsset?.employee_name },
+            { label: "Quantity Issued", value: selectedAsset?.quantity_issued },
+            { label: "Current Status", value: selectedAsset?.status },
+            {
+              label: "Issued Date",
+              value: selectedAsset?.issued_date
+                ? formatDate(selectedAsset.issued_date)
+                : "-",
+            },
+          ].map(({ label, value }) => (
             <Box
+              key={label}
               sx={{
-                py: 4,
                 display: "flex",
-                justifyContent: "center",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
               }}
             >
-              <CircularProgress />
+              <Typography variant="body2" color="text.secondary">
+                {label}
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {value ?? "-"}
+              </Typography>
             </Box>
-          ) : isAssignmentsError ? (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              Failed to load assignment list for this asset.
-            </Alert>
-          ) : (
-            <TableContainer
-              component={Paper}
-              variant="outlined"
-              sx={{ borderRadius: 2, mb: 2 }}
-            >
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={allIssuedSelected}
-                        indeterminate={someIssuedSelected}
-                        onChange={handleToggleSelectAll}
-                        disabled={!issuedAssignments.length}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Issue ID</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Employee</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Qty</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Issue Date</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Location</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Reason</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {assignments.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} align="center">
-                        <Typography variant="body2" color="text.secondary">
-                          No assignments found for this asset.
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    assignments.map((assignment) => {
-                      const selectable = assignment.status === "ISSUED";
-                      const checked = selectedAssignmentIds.includes(
-                        assignment.issue_record_id
-                      );
+          ))}
+        </Stack>
 
-                      return (
-                        <TableRow key={assignment.issue_record_id} hover>
-                          <TableCell padding="checkbox">
-                            <Checkbox
-                              checked={checked}
-                              disabled={!selectable}
-                              onChange={() =>
-                                toggleAssignment(assignment.issue_record_id)
-                              }
-                            />
-                          </TableCell>
-                          <TableCell>#{assignment.issue_record_id}</TableCell>
-                          <TableCell>
-                            <Typography variant="body2">
-                              {assignment.employee_name}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {assignment.employee_email}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>{assignment.quantity_issued}</TableCell>
-                          <TableCell>
-                            {new Date(assignment.issue_date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>{assignment.status}</TableCell>
-                          <TableCell>{assignment.location || "-"}</TableCell>
-                          <TableCell>{assignment.issue_reason || "-"}</TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
+        <Divider sx={{ mb: 2 }} />
+
+        {/* Return Form */}
+        <Stack spacing={2}>
+          <TextField
+            select
+            label="Return Status"
+            value={returnStatus}
+            onChange={(e) => setReturnStatus(e.target.value as "RETURNED" | "DAMAGED")}
+            fullWidth
+            size="small"
+          >
+            <MenuItem value="RETURNED">RETURNED</MenuItem>
+            <MenuItem value="DAMAGED">DAMAGED</MenuItem>
+          </TextField>
 
           <TextField
             label="Remarks (Optional)"
@@ -459,21 +347,28 @@ export default function AssetsTable({
             fullWidth
             multiline
             minRows={3}
+            size="small"
           />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleCloseReturnDialog} disabled={isReturning}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleReturnAssets}
-            disabled={!selectedAssignmentIds.length || isReturning}
-          >
-            {isReturning ? "Returning..." : "Return Selected"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+
+          <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+            <Button
+              variant="outlined"
+              onClick={handleCloseReturnDrawer}
+              disabled={isReturning}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleReturnAsset}
+              disabled={isReturning}
+              color={returnStatus === "DAMAGED" ? "error" : "primary"}
+            >
+              {isReturning ? "Submitting..." : "Confirm Return"}
+            </Button>
+          </Stack>
+        </Stack>
+      </Drawer>
     </Box>
   );
 }

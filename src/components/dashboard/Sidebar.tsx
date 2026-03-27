@@ -11,15 +11,16 @@ import {
   Box,
   Typography,
   Divider,
-  useTheme,
-  Avatar,
   Chip,
 } from "@mui/material";
 import { usePathname, useRouter } from "next/navigation";
 import { getNavigationByRole } from "@/utils/navigation";
 import { getUserData } from "@/utils/auth";
+import { Settings, Logout } from "@mui/icons-material";
+import { clearUserData } from "@/utils/auth";
+import { toast } from "react-toastify";
 
-const DRAWER_WIDTH = 260; // Reduced from 280
+const DRAWER_WIDTH = 260;
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -27,7 +28,6 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
-  const theme = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const { role } = getUserData();
@@ -39,79 +39,71 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     onClose();
   };
 
+  const handleLogout = () => {
+    clearUserData();
+    toast.success("Logged out successfully");
+    router.replace("/auth/login");
+  };
+
+  const SIDEBAR_BG = "linear-gradient(180deg, #1a237e 0%, #1565c0 60%, #1976d2 100%)";
+
   const drawerContent = (
     <Box
       sx={{
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: theme.palette.background.paper,
+        background: SIDEBAR_BG,
       }}
     >
       {/* Logo Section */}
-      <Box
-        sx={{
-          p: 2.5,
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-        }}
-      >
-        <Avatar
+      <Box sx={{ p: 2.5, display: "flex", alignItems: "center", gap: 1.5 }}>
+        <Box
           sx={{
-            width: 36,
-            height: 36,
-            backgroundColor: theme.palette.primary.main,
-            fontWeight: 700,
-            fontSize: "1.1rem",
+            width: 38,
+            height: 38,
+            borderRadius: "10px",
+            background: "rgba(255,255,255,0.2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
           }}
         >
-          K
-        </Avatar>
+          <Typography sx={{ color: "#fff", fontWeight: 800, fontSize: "1.1rem" }}>
+            K
+          </Typography>
+        </Box>
         <Box>
           <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 800,
-              color: theme.palette.text.primary,
-              letterSpacing: "-0.02em",
-              fontSize: "1.1rem",
-            }}
+            sx={{ color: "#fff", fontWeight: 800, fontSize: "1rem", lineHeight: 1.2 }}
           >
             Kavprime
           </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              color: theme.palette.text.secondary,
-              fontSize: "0.7rem",
-            }}
-          >
+          <Typography sx={{ color: "rgba(255,255,255,0.65)", fontSize: "0.7rem" }}>
             Inventory System
           </Typography>
         </Box>
       </Box>
 
       {/* Role Badge */}
-      <Box sx={{ px: 2.5, py: 1.5 }}>
+      <Box sx={{ px: 2.5, pb: 2 }}>
         <Chip
           label={role || "EMPLOYEE"}
           size="small"
           sx={{
-            backgroundColor: theme.palette.primary.main,
-            color: theme.palette.primary.contrastText,
-            fontWeight: 600,
-            fontSize: "0.7rem",
-            height: "24px",
+            backgroundColor: "#F59E0B",
+            color: "#fff",
+            fontWeight: 700,
+            fontSize: "0.65rem",
+            height: "22px",
+            letterSpacing: "0.05em",
           }}
         />
       </Box>
 
-      <Divider />
-
       {/* Navigation Items */}
-      <List sx={{ flex: 1, px: 2, py: 1 }}>
+      <List sx={{ flex: 1, px: 1.5, py: 0.5 }}>
         {navigationItems.map((item) => {
           const isActive = pathname === item.path;
           const Icon = item.icon;
@@ -125,34 +117,25 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                   py: 1,
                   px: 1.5,
                   backgroundColor: isActive
-                    ? theme.palette.primary.main
+                    ? "rgba(255,255,255,0.18)"
                     : "transparent",
-                  color: isActive
-                    ? theme.palette.primary.contrastText
-                    : theme.palette.text.primary,
                   "&:hover": {
                     backgroundColor: isActive
-                      ? theme.palette.primary.dark
-                      : theme.palette.action.hover,
+                      ? "rgba(255,255,255,0.22)"
+                      : "rgba(255,255,255,0.1)",
                   },
                   transition: "all 0.2s ease",
                 }}
               >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 36,
-                    color: isActive
-                      ? theme.palette.primary.contrastText
-                      : theme.palette.text.secondary,
-                  }}
-                >
-                  <Icon sx={{ fontSize: "1.3rem" }} />
+                <ListItemIcon sx={{ minWidth: 36, color: "rgba(255,255,255,0.85)" }}>
+                  <Icon sx={{ fontSize: "1.25rem" }} />
                 </ListItemIcon>
                 <ListItemText
                   primary={item.title}
                   primaryTypographyProps={{
                     fontSize: 14,
-                    fontWeight: isActive ? 600 : 500,
+                    fontWeight: isActive ? 700 : 500,
+                    color: "#fff",
                   }}
                 />
               </ListItemButton>
@@ -161,25 +144,49 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         })}
       </List>
 
-      {/* Footer */}
-      <Box
-        sx={{
-          p: 2,
-          borderTop: `1px solid ${theme.palette.divider}`,
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{
-            color: theme.palette.text.secondary,
-            display: "block",
-            textAlign: "center",
-            fontSize: "0.7rem",
-          }}
-        >
-          © 2024 Kavprime
-        </Typography>
-      </Box>
+      {/* Bottom: Settings & Logout */}
+      <Divider sx={{ borderColor: "rgba(255,255,255,0.15)", mx: 2 }} />
+      <List sx={{ px: 1.5, py: 1 }}>
+        <ListItem disablePadding sx={{ mb: 0.5 }}>
+          <ListItemButton
+            onClick={() => handleNavigation("/dashboard/settings")}
+            sx={{
+              borderRadius: "10px",
+              py: 1,
+              px: 1.5,
+              "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 36, color: "rgba(255,255,255,0.75)" }}>
+              <Settings sx={{ fontSize: "1.25rem" }} />
+            </ListItemIcon>
+            <ListItemText
+              primary="Settings"
+              primaryTypographyProps={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.85)" }}
+            />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={handleLogout}
+            sx={{
+              borderRadius: "10px",
+              py: 1,
+              px: 1.5,
+              "&:hover": { backgroundColor: "rgba(239,68,68,0.15)" },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 36, color: "#F87171" }}>
+              <Logout sx={{ fontSize: "1.25rem" }} />
+            </ListItemIcon>
+            <ListItemText
+              primary="Logout"
+              primaryTypographyProps={{ fontSize: 14, fontWeight: 500, color: "#F87171" }}
+            />
+          </ListItemButton>
+        </ListItem>
+      </List>
     </Box>
   );
 
@@ -190,9 +197,7 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         variant="temporary"
         open={mobileOpen}
         onClose={onClose}
-        ModalProps={{
-          keepMounted: true,
-        }}
+        ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: "block", md: "none" },
           "& .MuiDrawer-paper": {
@@ -214,7 +219,6 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
             width: DRAWER_WIDTH,
             boxSizing: "border-box",
             border: "none",
-            borderRight: `1px solid ${theme.palette.divider}`,
           },
         }}
         open

@@ -192,7 +192,8 @@ export interface ReturnAssetResponse {
 
 // Asset Details Types
 export interface AssetDetail {
-  record_id: number;
+  id: number; // The actual issue record ID returned by the API
+  record_id: number; // Alias for backward compatibility
   asset_id?: number;
   asset_tag: string;
   category: string;
@@ -307,10 +308,9 @@ export interface GetVendorsResponse {
 
 export interface GetAssetDetailResponse {
   id: number;
-  inventory: {
+  asset: {
     id: number;
-    name: string;
-    code: string;
+    tag: string;
     brand: string;
     model: string;
     category: string;
@@ -322,7 +322,7 @@ export interface GetAssetDetailResponse {
     role: string;
   };
   quantity_issued: number;
-  quantity_issued_date: string;
+  issue_date: string;
   return_date: string | null;
   status: "ISSUED" | "RETURNED" | "DAMAGED";
   remarks: string | null;

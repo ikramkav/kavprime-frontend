@@ -27,7 +27,7 @@ export default function AssetsManagement() {
   const assets: AssetDetail[] = data?.assets || [];
 
   const handleViewDetail = (asset: AssetDetail) => {
-    setSelectedAsset(asset.record_id);
+    setSelectedAsset(asset.id);
     setDetailDialogOpen(true);
   };
 

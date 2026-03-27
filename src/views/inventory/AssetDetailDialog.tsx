@@ -2,17 +2,16 @@
 
 import React from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
+  Drawer,
   Box,
   Typography,
   Chip,
   Divider,
   useTheme,
   CircularProgress,
+  Alert,
+  Stack,
+  useMediaQuery,
 } from "@mui/material";
 import {
   useGetAssetDetailQuery,
@@ -30,9 +29,28 @@ export default function AssetDetailDialog({
   onClose,
 }: AssetDetailDialogProps) {
   const theme = useTheme();
-  const { data: asset, isLoading } = useGetAssetDetailQuery(assetId!, {
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("md"));
+  const { data: asset, isLoading, isError } = useGetAssetDetailQuery(assetId!, {
     skip: !assetId,
   });
+
+  const formatLabel = (key: string) =>
+    key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+
+  const formatValue = (value: unknown) => {
+    if (value === null || value === undefined || value === "") return "-";
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (typeof value === "object") return "-";
+    return String(value);
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return dateString;
+    }
+  };
 
   const getStatusColor = (status: string) => {
     const colors: any = {
@@ -44,210 +62,432 @@ export default function AssetDetailDialog({
   };
 
   return (
-    <Dialog
+    <Drawer
+      anchor="right"
       open={open}
       onClose={onClose}
-      maxWidth="md"
-      fullWidth
       PaperProps={{
         sx: {
-          borderRadius: "16px",
+          width: { xs: "100%", sm: 420, md: 520 },
+          p: 2.5,
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          fontWeight: 600,
-          fontSize: "1.25rem",
-        }}
-      >
+      <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>
         Asset Details
-      </DialogTitle>
-      <DialogContent>
-        {isLoading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              py: 4,
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        ) : asset ? (
-          <Box sx={{ py: 2 }}>
-            {/* Asset Status */}
-            <Box sx={{ mb: 3 }}>
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {asset?.asset?.tag || "-"}
+      </Typography>
+
+      {isLoading ? (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            py: 4,
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      ) : isError ? (
+        <Alert severity="error" sx={{ my: 2 }}>
+          Failed to load asset details. Please try again.
+        </Alert>
+      ) : asset && asset.asset && asset.employee ? (
+        <>
+          <Divider sx={{ mb: 1.5 }} />
+          <Stack spacing={1.25}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Id
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {asset.id}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Asset Tag
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {asset.asset.tag}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Brand
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {asset.asset.brand}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Model
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {asset.asset.model}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Category
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {asset.asset.category}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Status
+              </Typography>
               <Chip
                 label={asset.status}
+                size="small"
                 sx={{
                   backgroundColor: `${getStatusColor(asset.status)}20`,
                   color: getStatusColor(asset.status),
                   fontWeight: 600,
-                  fontSize: "0.875rem",
-                  px: 2,
-                  py: 2.5,
+                  fontSize: "0.7rem",
+                  height: "24px",
                 }}
               />
             </Box>
 
-            <Divider sx={{ mb: 3 }} />
-
-            {/* Inventory Information */}
-            <Box sx={{ mb: 3 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 700, mb: 2, color: theme.palette.primary.main }}
-              >
-                Inventory Information
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Employee Name
               </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Item Name
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {asset.inventory.name}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Item Code
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {asset.inventory.code}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Brand
-                  </Typography>
-                  <Typography variant="body2">{asset.inventory.brand}</Typography>
-                </Box>
-                <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Model
-                  </Typography>
-                  <Typography variant="body2">{asset.inventory.model}</Typography>
-                </Box>
-                <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Category
-                  </Typography>
-                  <Typography variant="body2">{asset.inventory.category}</Typography>
-                </Box>
-              </Box>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {asset.employee.name}
+              </Typography>
             </Box>
 
-            <Divider sx={{ mb: 3 }} />
-
-            {/* Employee Information */}
-            <Box sx={{ mb: 3 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 700, mb: 2, color: theme.palette.primary.main }}
-              >
-                Employee Information
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Employee Email
               </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Name
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {asset.employee.name}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Email
-                  </Typography>
-                  <Typography variant="body2">{asset.employee.email}</Typography>
-                </Box>
-                <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Role
-                  </Typography>
-                  <Typography variant="body2">{asset.employee.role}</Typography>
-                </Box>
-              </Box>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {asset.employee.email}
+              </Typography>
             </Box>
 
-            <Divider sx={{ mb: 3 }} />
-
-            {/* Issue Information */}
-            <Box sx={{ mb: 3 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 700, mb: 2, color: theme.palette.primary.main }}
-              >
-                Issue Information
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Employee Role
               </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Quantity Issued
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {asset.quantity_issued}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Issue Date
-                  </Typography>
-                  <Typography variant="body2">
-                    {new Date(asset.quantity_issued_date).toLocaleDateString()}
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Issued By
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {asset.issued_by.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {asset.issued_by.email}
-                  </Typography>
-                </Box>
-                {asset.return_date && (
-                  <Box sx={{ flex: "1 1 45%", minWidth: "200px" }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Return Date
-                    </Typography>
-                    <Typography variant="body2">
-                      {new Date(asset.return_date).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {asset.employee.role}
+              </Typography>
             </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Quantity Issued
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {asset.quantity_issued}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Issue Date
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {formatDate(asset.issue_date)}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Issued By
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {asset.issued_by.name}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Issued By Email
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {asset.issued_by.email}
+              </Typography>
+            </Box>
+
+            {asset.return_date && (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: isSmallScreen ? "column" : "row",
+                  justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                  alignItems: isSmallScreen ? "flex-start" : "center",
+                  gap: 0.5,
+                  py: 0.5,
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Return Date
+                </Typography>
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                  sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+                >
+                  {formatDate(asset.return_date)}
+                </Typography>
+              </Box>
+            )}
 
             {asset.remarks && (
-              <>
-                <Divider sx={{ mb: 3 }} />
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, mb: 1, color: theme.palette.primary.main }}
-                  >
-                    Remarks
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {asset.remarks}
-                  </Typography>
-                </Box>
-              </>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: isSmallScreen ? "column" : "row",
+                  justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                  alignItems: isSmallScreen ? "flex-start" : "center",
+                  gap: 0.5,
+                  py: 0.5,
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Remarks
+                </Typography>
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                  sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+                >
+                  {asset.remarks}
+                </Typography>
+              </Box>
             )}
-          </Box>
-        ) : null}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2.5 }}>
-        <Button onClick={onClose} variant="contained" sx={{ textTransform: "none" }}>
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Created At
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {formatDate(asset.created_at)}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: isSmallScreen ? "column" : "row",
+                justifyContent: isSmallScreen ? "flex-start" : "space-between",
+                alignItems: isSmallScreen ? "flex-start" : "center",
+                gap: 0.5,
+                py: 0.5,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Updated At
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{ textAlign: isSmallScreen ? "left" : "right" }}
+              >
+                {formatDate(asset.updated_at)}
+              </Typography>
+            </Box>
+          </Stack>
+        </>
+      ) : (
+        <Box sx={{ py: 4, textAlign: "center" }}>
+          <Typography color="text.secondary" variant="body2">
+            No asset details available.
+          </Typography>
+        </Box>
+      )}
+    </Drawer>
   );
 }
