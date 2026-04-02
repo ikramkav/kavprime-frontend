@@ -7,8 +7,8 @@ import type {
 } from "@reduxjs/toolkit/query";
 import { clearUserData, getAuthHeader } from "@/utils/auth";
 
-// Base URL for your API - Use environment variable or fallback to network IP
-export const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://192.168.100.238:8000/api";
+// Base URL for your API - Use environment variable or fallback to localhost
+export const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
